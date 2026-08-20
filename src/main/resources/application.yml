@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: shift-catcher
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/shift_catcher}
+    username: ${DB_USER:shift_catcher}
+    password: ${DB_PASSWORD:}
+  flyway:
+    enabled: true
+    validate-migration-naming: true
+  jackson:
+    time-zone: UTC
+
+server:
+  error:
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  structured:
+    format:
+      console: ecs
+
+shift-catcher:
+  security:
+    admin-api-token: ${ADMIN_API_TOKEN:}
+  poc:
+    stage: TRANSPORT

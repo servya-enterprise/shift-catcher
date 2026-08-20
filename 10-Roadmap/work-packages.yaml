@@ -2,7 +2,7 @@ version: 1
 work_packages:
 - id: WP-POC-001
   title: Repository & engineering bootstrap
-  status: READY
+  status: DONE
   depends_on: []
   goal: Criar projeto independente com foundation equivalente ao padrão Clara Care.
   endpoints:
@@ -14,7 +14,7 @@ work_packages:
   - no Clara Care dependency
 - id: WP-POC-002
   title: GREEN-API transport proof
-  status: PLANNED
+  status: READY
   depends_on:
   - WP-POC-001
   goal: Provar grupo real, webhook, state e quote.

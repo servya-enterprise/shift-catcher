@@ -5,12 +5,12 @@ endpoints:
   method: GET
   path: /health
   work_package: WP-POC-001
-  status: SPECIFIED
+  status: VERIFIED
 - id: EP-002
   method: GET
   path: /poc/status
   work_package: WP-POC-001
-  status: SPECIFIED
+  status: VERIFIED
 - id: EP-003
   method: GET
   path: /metrics/latency
