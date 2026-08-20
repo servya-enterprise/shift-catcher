@@ -12,6 +12,7 @@ import java.util.UUID
 
 const val CORRELATION_ID_HEADER = "X-Correlation-Id"
 const val CORRELATION_ID_MDC_KEY = "correlationId"
+const val REQUEST_RECEIVED_AT_ATTRIBUTE = "requestReceivedAt"
 
 private val validCorrelationId = Regex("^[A-Za-z0-9._-]{1,128}$")
 
@@ -26,6 +27,7 @@ class CorrelationIdFilter : OncePerRequestFilter() {
         val supplied = request.getHeader(CORRELATION_ID_HEADER)
         val correlationId = supplied?.takeIf(validCorrelationId::matches) ?: UUID.randomUUID().toString()
         request.setAttribute(CORRELATION_ID_MDC_KEY, correlationId)
+        request.setAttribute(REQUEST_RECEIVED_AT_ATTRIBUTE, java.time.Instant.now())
         response.setHeader(CORRELATION_ID_HEADER, correlationId)
         MDC.put(CORRELATION_ID_MDC_KEY, correlationId)
         try {

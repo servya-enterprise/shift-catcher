@@ -44,7 +44,7 @@
   "09-Decisions/DEC-005-Fail-Safe-Auto-Claim.md": "08645790b910fc4f524c32f176cbdd3190ebb33adb52e87dea467d2b1b5b5768",
   "09-Decisions/DEC-006-Transactional-Outbox.md": "587a6e005dee7c0dbe9a34f819dd64780b8383e38ba9930b21e91d9a85f1294b",
   "10-Roadmap/Roadmap.md": "53e1b89828a2f4e74f9a2e5992ffeb1d811a4f1645f9199065b03aa9d8a28e69",
-  "10-Roadmap/endpoint-coverage.yaml": "c45e9c3fd3763b1c75f8acc3824908ba4a49c9f4c08eda350d1d256c64e2bd73",
+  "10-Roadmap/endpoint-coverage.yaml": "19351e75f0ed11d25997a635d4a5d48c81381c5c66986622eaa39aa39830cd98",
   "10-Roadmap/work-packages.yaml": "c1f0a424bff9fd971abc2d7b9d2a619de37875f9dedc7b7187fe717ea62a2492",
   "11-Handoff/Bootstrap-Prompt.md": "d193785466d1402d21ae2cd5c489ac6d369a886a1f3553ca44026bfd5de93d6a",
   "11-Handoff/Clara-Care-Reference-Policy.md": "96c322bee4aafc1928e4346223f664cefa794ad994a8488b6e45654825bc5b3a",
@@ -53,5 +53,5 @@
   "MANIFEST.json": "26c23039aaec0cad453a69b5ea721d3c3672211e6e7ee88885d7aead7e591573",
   "PLANS.md": "e00f17c82e2f7fa5732d497a9d2d403a96ef951f226b7d79123fe486bb518a82",
   "README.md": "1200714b6167cae7122ec82e40025e1d226f76c52e8c782b42ef4e388068ab47",
-  "openapi/poc-openapi.yaml": "1098b9f3c1b91f8cdbdb15e90cf5f034edce6a8a431dc009dfc7c31125027568"
+  "openapi/poc-openapi.yaml": "6b6fe858f69e7399cd0fc5e6f3b0427564c6568ac4d8e8d7f517c9d2d4c701f0"
 }

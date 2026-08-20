@@ -1,6 +1,7 @@
 FROM gradle:8.14-jdk21@sha256:dae150d9066fc04a791ec7f0adc1a0eb4e867f11d76d03063ee0a60e5da56149 AS build
 WORKDIR /workspace
 COPY --chown=gradle:gradle settings.gradle.kts build.gradle.kts gradle.properties ./
+RUN gradle dependencies --no-daemon
 COPY --chown=gradle:gradle src src
 RUN gradle bootJar --no-daemon
 

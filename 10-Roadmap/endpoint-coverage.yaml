@@ -20,17 +20,17 @@ endpoints:
   method: POST
   path: /webhooks/green-api
   work_package: WP-POC-002
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-005
   method: GET
   path: /integrations/green-api/state
   work_package: WP-POC-002
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-006
   method: POST
   path: /integrations/green-api/verify
   work_package: WP-POC-002
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-007
   method: GET
   path: /groups
@@ -165,7 +165,7 @@ endpoints:
   method: POST
   path: /poc/send-test-reply
   work_package: WP-POC-002
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-034
   method: POST
   path: /poc/detect

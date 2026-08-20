@@ -4,12 +4,32 @@ import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import java.net.URI
 
 @RestControllerAdvice
 class ApiProblemHandler {
+    @ExceptionHandler(ApiProblemException::class)
+    fun apiProblem(
+        exception: ApiProblemException,
+        request: HttpServletRequest,
+    ): ProblemDetail =
+        problem(
+            status = exception.status,
+            title = exception.title,
+            detail = exception.message,
+            code = exception.code,
+            request = request,
+        )
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun unreadableRequest(
+        exception: HttpMessageNotReadableException,
+        request: HttpServletRequest,
+    ): ProblemDetail = invalidRequest(IllegalArgumentException("Malformed JSON request"), request)
+
     @ExceptionHandler(IllegalArgumentException::class)
     fun invalidRequest(
         exception: IllegalArgumentException,
@@ -58,3 +78,10 @@ class ApiProblemHandler {
         val logger = LoggerFactory.getLogger(ApiProblemHandler::class.java)
     }
 }
+
+class ApiProblemException(
+    val status: HttpStatus,
+    val code: String,
+    val title: String,
+    override val message: String,
+) : RuntimeException(message)

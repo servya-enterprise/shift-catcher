@@ -21,14 +21,14 @@ class FoundationIntegrationTest(
 ) {
     @Test
     fun `Flyway migration applies to clean PostgreSQL`() {
-        val migrationCount =
+        val foundationMigrationCount =
             jdbcTemplate.queryForObject(
-                "select count(*) from flyway_schema_history where success",
+                "select count(*) from flyway_schema_history where version = '1' and success",
                 Int::class.java,
             )
         val markerCount = jdbcTemplate.queryForObject("select count(*) from poc_bootstrap", Int::class.java)
 
-        assertEquals(1, migrationCount)
+        assertEquals(1, foundationMigrationCount)
         assertEquals(1, markerCount)
     }
 
@@ -81,6 +81,19 @@ class FoundationIntegrationTest(
                 header("Authorization", "bearer test-admin-token")
             }.andExpect {
                 status { isOk() }
+            }
+    }
+
+    @Test
+    fun `GREEN API state is explicitly unconfigured without credentials`() {
+        mockMvc
+            .get("/api/v1/integrations/green-api/state") {
+                header("Authorization", "Bearer test-admin-token")
+            }.andExpect {
+                status { isOk() }
+                jsonPath("$.configured") { value(false) }
+                jsonPath("$.state") { value("UNCONFIGURED") }
+                jsonPath("$.operational") { value(false) }
             }
     }
 }

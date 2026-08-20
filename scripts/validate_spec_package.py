@@ -124,6 +124,31 @@ def validate_dag_and_coverage(errors: list[str]) -> None:
     if len(operation_ids) != len(set(operation_ids)):
         fail(errors, "duplicate OpenAPI operationId")
 
+    def resolve_local_reference(reference: str) -> object:
+        current: object = openapi
+        for token in reference.removeprefix("#/").split("/"):
+            token = token.replace("~1", "/").replace("~0", "~")
+            if not isinstance(current, dict) or token not in current:
+                raise KeyError(reference)
+            current = current[token]
+        return current
+
+    def walk(value: object) -> None:
+        if isinstance(value, dict):
+            reference = value.get("$ref")
+            if isinstance(reference, str) and reference.startswith("#/"):
+                try:
+                    resolve_local_reference(reference)
+                except KeyError:
+                    fail(errors, f"unresolved OpenAPI reference: {reference}")
+            for child in value.values():
+                walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+
+    walk(openapi)
+
 
 def main() -> int:
     errors: list[str] = []
@@ -146,4 +171,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

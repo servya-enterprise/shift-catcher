@@ -34,3 +34,11 @@ shift-catcher:
     admin-api-token: ${ADMIN_API_TOKEN:}
   poc:
     stage: TRANSPORT
+  green-api:
+    api-url: ${GREEN_API_API_URL:}
+    instance-id: ${GREEN_API_INSTANCE_ID:}
+    api-token: ${GREEN_API_API_TOKEN:}
+    webhook-token: ${GREEN_API_WEBHOOK_TOKEN:}
+    connect-timeout: ${GREEN_API_CONNECT_TIMEOUT:2s}
+    read-timeout: ${GREEN_API_READ_TIMEOUT:5s}
+    allow-insecure-http: ${GREEN_API_ALLOW_INSECURE_HTTP:false}

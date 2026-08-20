@@ -146,10 +146,13 @@ paths:
       responses:
         '200':
           description: Success
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericObject'
+                $ref: '#/components/schemas/WebhookIngestionResponse'
         '400':
           description: Invalid request
           content:
@@ -158,6 +161,12 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '401':
           description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Payload too large
           content:
             application/problem+json:
               schema:
@@ -175,11 +184,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericObject'
+              $ref: '#/components/schemas/GreenApiWebhookEnvelope'
   /integrations/green-api/state:
     get:
       operationId: get_integrations_green_api_state
@@ -191,10 +200,13 @@ paths:
       responses:
         '200':
           description: Success
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericObject'
+                $ref: '#/components/schemas/GreenApiStateResponse'
         '400':
           description: Invalid request
           content:
@@ -215,6 +227,18 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '500':
           description: Unexpected error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '502':
+          description: GREEN-API unavailable or invalid response
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '504':
+          description: GREEN-API timeout
           content:
             application/problem+json:
               schema:
@@ -230,10 +254,13 @@ paths:
       responses:
         '200':
           description: Success
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericObject'
+                $ref: '#/components/schemas/GreenApiVerificationResponse'
         '400':
           description: Invalid request
           content:
@@ -258,12 +285,18 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GenericObject'
+        '502':
+          description: GREEN-API unavailable or invalid response
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '504':
+          description: GREEN-API timeout
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /groups:
     get:
       operationId: get_groups
@@ -1492,13 +1525,24 @@ paths:
       - WP-POC-002
       security:
       - AdminBearer: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
       responses:
         '200':
           description: Success
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericObject'
+                $ref: '#/components/schemas/SendTestReplyResponse'
         '400':
           description: Invalid request
           content:
@@ -1523,12 +1567,24 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '502':
+          description: GREEN-API unavailable or invalid response
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '504':
+          description: GREEN-API timeout
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericObject'
+              $ref: '#/components/schemas/SendTestReplyRequest'
   /poc/detect:
     post:
       operationId: post_poc_detect
@@ -1739,6 +1795,182 @@ components:
         timestamp:
           type: string
           format: date-time
+    GreenApiWebhookEnvelope:
+      type: object
+      additionalProperties: true
+      properties:
+        typeWebhook:
+          type: string
+        instanceData:
+          $ref: '#/components/schemas/GreenApiInstanceData'
+        timestamp:
+          type: integer
+          format: int64
+        idMessage:
+          type: string
+        senderData:
+          $ref: '#/components/schemas/GreenApiSenderData'
+        messageData:
+          $ref: '#/components/schemas/GreenApiMessageData'
+    GreenApiInstanceData:
+      type: object
+      additionalProperties: true
+      properties:
+        idInstance:
+          type: integer
+          format: int64
+    GreenApiSenderData:
+      type: object
+      additionalProperties: true
+      properties:
+        chatId:
+          type: string
+        chatName:
+          type: string
+        sender:
+          type: string
+        senderName:
+          type: string
+        senderContactName:
+          type: string
+    GreenApiMessageData:
+      type: object
+      additionalProperties: true
+      properties:
+        typeMessage:
+          type: string
+        textMessageData:
+          type: object
+          additionalProperties: true
+          properties:
+            textMessage:
+              type: string
+    WebhookIngestionResponse:
+      type: object
+      additionalProperties: false
+      required: [status, receivedAt]
+      properties:
+        status:
+          type: string
+          enum: [ACCEPTED, DUPLICATE, IGNORED]
+        eventId:
+          type: [string, 'null']
+          format: uuid
+        receivedAt:
+          type: string
+          format: date-time
+        persistedAt:
+          type: [string, 'null']
+          format: date-time
+    GreenApiStateResponse:
+      type: object
+      additionalProperties: false
+      required: [configured, state, operational, observedAt]
+      properties:
+        configured:
+          type: boolean
+        state:
+          type: string
+          enum: [UNCONFIGURED, AUTHORIZED, STARTING, SLEEP_MODE, NOT_AUTHORIZED, BLOCKED, SUSPENDED, UNKNOWN]
+        rawState:
+          type: [string, 'null']
+        operational:
+          type: boolean
+        observedAt:
+          type: string
+          format: date-time
+    LatestGroupWebhookResponse:
+      type: object
+      additionalProperties: false
+      required: [eventId, chatId, senderId, providerMessageId, providerTimestamp, webhookReceivedAt, persistedAt]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        chatId:
+          type: string
+        senderId:
+          type: string
+        providerMessageId:
+          type: string
+        providerTimestamp:
+          type: string
+          format: date-time
+        webhookReceivedAt:
+          type: string
+          format: date-time
+        persistedAt:
+          type: string
+          format: date-time
+    GreenApiVerificationResponse:
+      type: object
+      additionalProperties: false
+      required: [configured, providerState, providerOperational, correctIdentifiersObserved, readyForTestReply, quotedReplyVisualStatus, verified, checkedAt]
+      properties:
+        configured:
+          type: boolean
+        providerState:
+          type: string
+        providerOperational:
+          type: boolean
+        latestGroupWebhook:
+          oneOf:
+          - $ref: '#/components/schemas/LatestGroupWebhookResponse'
+          - type: 'null'
+        correctIdentifiersObserved:
+          type: boolean
+        readyForTestReply:
+          type: boolean
+        quotedReplyVisualStatus:
+          type: string
+          enum: [NOT_CONFIRMED, CONFIRMED, FAILED]
+        verified:
+          type: boolean
+        checkedAt:
+          type: string
+          format: date-time
+    SendTestReplyRequest:
+      type: object
+      additionalProperties: false
+      required: [chatId, quotedMessageId]
+      properties:
+        chatId:
+          type: string
+          pattern: '@g\\.us$'
+        quotedMessageId:
+          type: string
+          minLength: 1
+          maxLength: 128
+    SendTestReplyResponse:
+      type: object
+      additionalProperties: false
+      required: [replyId, status, chatId, quotedMessageId, message, idempotentReplay, visualConfirmationRequired]
+      properties:
+        replyId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING, ACCEPTED, FAILED]
+        providerMessageId:
+          type: [string, 'null']
+        chatId:
+          type: string
+        quotedMessageId:
+          type: string
+        message:
+          type: string
+          const: PEGO
+        sendStartedAt:
+          type: [string, 'null']
+          format: date-time
+        providerAcceptedAt:
+          type: [string, 'null']
+          format: date-time
+        idempotentReplay:
+          type: boolean
+        visualConfirmationRequired:
+          type: boolean
     GenericObject:
       type: object
       additionalProperties: true
