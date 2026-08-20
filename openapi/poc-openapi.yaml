@@ -1882,7 +1882,7 @@ components:
     LatestGroupWebhookResponse:
       type: object
       additionalProperties: false
-      required: [eventId, chatId, senderId, providerMessageId, providerTimestamp, webhookReceivedAt, persistedAt]
+      required: [eventId, chatId, senderId, providerMessageId, messageText, providerTimestamp, webhookReceivedAt, persistedAt]
       properties:
         eventId:
           type: string
@@ -1892,6 +1892,8 @@ components:
         senderId:
           type: string
         providerMessageId:
+          type: string
+        messageText:
           type: string
         providerTimestamp:
           type: string

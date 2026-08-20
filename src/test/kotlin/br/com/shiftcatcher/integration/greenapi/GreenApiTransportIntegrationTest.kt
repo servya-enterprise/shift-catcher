@@ -257,6 +257,7 @@ class GreenApiTransportIntegrationTest(
                 jsonPath("$.providerOperational") { value(true) }
                 jsonPath("$.correctIdentifiersObserved") { value(true) }
                 jsonPath("$.readyForTestReply") { value(true) }
+                jsonPath("$.latestGroupWebhook.messageText") { value("teste shift catcher") }
                 jsonPath("$.quotedReplyVisualStatus") { value("NOT_CONFIRMED") }
                 jsonPath("$.verified") { value(false) }
             }

@@ -27,6 +27,15 @@ Em ambientes sem a limitação de path/rede do host Windows, use o wrapper padr�
 
 Para executar via Compose, copie `.env.example` para `.env`, substitua apenas valores locais e rode `docker compose up --build`. Credenciais reais nunca devem ser commitadas.
 
+Com a instância real autorizada, webhook público configurado e aplicação em execução, o probe controlado do WP-POC-002 espera uma mensagem nova no grupo exato, envia `PEGO`, testa replay idempotente e grava somente evidência sanitizada local:
+
+```powershell
+$env:ADMIN_API_TOKEN = '<token-local>'
+.\scripts\invoke_wp_poc_002_real_probe.ps1 -ExpectedChatId '<grupo>@g.us'
+```
+
+O probe nunca converte aceitação HTTP em `GO`: a citação ainda exige confirmação visual de outro participante.
+
 ## Princípio central
 
 `grupo real -> GREEN-API -> webhook -> ingestão idempotente -> detecção -> oportunidade -> claim -> SendMessage quoted -> "PEGO" no grupo`
