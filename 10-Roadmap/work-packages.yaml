@@ -1,0 +1,126 @@
+version: 1
+work_packages:
+- id: WP-POC-001
+  title: Repository & engineering bootstrap
+  status: READY
+  depends_on: []
+  goal: Criar projeto independente com foundation equivalente ao padrão Clara Care.
+  endpoints:
+  - EP-001
+  - EP-002
+  acceptance:
+  - clean build
+  - Flyway/Testcontainers smoke
+  - no Clara Care dependency
+- id: WP-POC-002
+  title: GREEN-API transport proof
+  status: PLANNED
+  depends_on:
+  - WP-POC-001
+  goal: Provar grupo real, webhook, state e quote.
+  endpoints:
+  - EP-004
+  - EP-005
+  - EP-006
+  - EP-033
+  acceptance:
+  - real group webhook
+  - correct IDs
+  - quoted PEGO visible
+  - non-operational blocks send
+- id: WP-POC-003
+  title: Ingestion & group allowlist
+  status: PLANNED
+  depends_on:
+  - WP-POC-002
+  goal: Persistir/deduplicar e filtrar grupos.
+  endpoints:
+  - EP-007
+  - EP-008
+  - EP-009
+  - EP-010
+  - EP-011
+  - EP-012
+  - EP-013
+  - EP-014
+  - EP-015
+  - EP-016
+  - EP-017
+  acceptance:
+  - duplicate one message
+  - disabled group no candidate
+  - fast webhook
+- id: WP-POC-004
+  title: Detection & extraction
+  status: PLANNED
+  depends_on:
+  - WP-POC-003
+  goal: Candidate filter, deterministic extraction e AI fallback.
+  endpoints:
+  - EP-018
+  - EP-019
+  - EP-020
+  - EP-022
+  - EP-034
+  acceptance:
+  - fixture dataset
+  - irrelevant no AI
+  - ambiguous review
+- id: WP-POC-005
+  title: Rule Engine
+  status: PLANNED
+  depends_on:
+  - WP-POC-004
+  goal: Eligibility e versioned rules.
+  endpoints:
+  - EP-021
+  - EP-027
+  - EP-028
+  - EP-029
+  - EP-030
+  - EP-031
+  - EP-032
+  acceptance:
+  - fail-safe
+  - versioned evaluation
+  - AI cannot bypass rules
+- id: WP-POC-006
+  title: Claim Engine & quoted PEGO
+  status: PLANNED
+  depends_on:
+  - WP-POC-005
+  goal: Claim manual/auto e outbox.
+  endpoints:
+  - EP-023
+  - EP-024
+  - EP-025
+  - EP-026
+  acceptance:
+  - one concurrent winner
+  - one logical send
+  - quote immutable
+- id: WP-POC-007
+  title: Reliability & observability
+  status: PLANNED
+  depends_on:
+  - WP-POC-006
+  goal: Recovery, health, audit e métricas.
+  endpoints:
+  - EP-003
+  acceptance:
+  - restart recovery
+  - provider health blocks auto
+  - latency percentiles
+- id: WP-POC-008
+  title: Benchmark & GO-NO-GO
+  status: PLANNED
+  depends_on:
+  - WP-POC-007
+  goal: Executar benchmark e decisão factual.
+  endpoints:
+  - EP-035
+  - EP-036
+  acceptance:
+  - 100-message benchmark
+  - acceptance checklist
+  - decision report

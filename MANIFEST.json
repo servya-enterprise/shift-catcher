@@ -1,0 +1,10 @@
+{
+  "name": "shift-catcher-poc-specs",
+  "version": "0.1.0",
+  "generated_at": "2026-08-20",
+  "type": "specifications-only",
+  "endpoint_count": 36,
+  "work_package_count": 8,
+  "green_api_plan": "Developer",
+  "recommended_repository": "separate from Clara Care"
+}
