@@ -38,4 +38,3 @@ create table transport_test_reply (
     failed_at timestamptz,
     failure_code varchar(64)
 );
-
