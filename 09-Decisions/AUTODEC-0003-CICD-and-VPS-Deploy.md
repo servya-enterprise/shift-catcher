@@ -71,5 +71,16 @@ remains a real-gate input outside this repository's control.
   operational files here do not require checksum registration, matching how
   `AUTODEC-0001`/`AUTODEC-0002` were added without one.
 
+## Amendment (2026-08-23)
+The VPS hosts more than one project. During the first real deploy, the `app`
+container failed to bind `127.0.0.1:8080` because an unrelated project on the
+same VPS (`garimpo-zap-api-1`) already published that host port. Rather than
+force-remove other projects' containers on every shift-catcher deploy,
+`docker-compose.prod.yml` now publishes the app on `127.0.0.1:8081:8080`
+(container-internal port unchanged at `8080`). The host-level Caddy config
+(outside this repo, since `Caddyfile` was removed — see the entry above from
+`b129f22`) must `reverse_proxy 127.0.0.1:8081` accordingly; this is a manual,
+one-time step on the VPS itself, not something CI can apply.
+
 ## Status
 ACTIVE
