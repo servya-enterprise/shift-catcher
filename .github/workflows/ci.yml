@@ -86,6 +86,12 @@ jobs:
             cd ~/shift-catcher
             echo "IMAGE=ghcr.io/${{ github.repository }}:${{ github.sha }}" > .image.env
             docker compose --env-file .env --env-file .image.env -f docker-compose.prod.yml pull
+            stale=$(docker ps --format "{{.ID}} {{.Names}} {{.Ports}}" | grep ":8080->" | grep -v " shift-catcher-app-1 " || true)
+            if [ -n "$stale" ]; then
+              echo "Freeing host port 8080 held by:"
+              echo "$stale"
+              echo "$stale" | cut -d" " -f1 | xargs docker rm -f
+            fi
             docker compose --env-file .env --env-file .image.env -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
           '
