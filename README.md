@@ -55,3 +55,18 @@ O probe nunca converte aceitação HTTP em `GO`: a citação ainda exige confirm
 - decisões congeladas;
 - work packages;
 - prompt de bootstrap para Codex.
+
+## Deploy (VPS)
+
+Pipeline de publicação contínua para a VPS (Hostinger, Docker/Compose já
+instalado, domínio próprio já apontado): GitHub Actions builda e publica a
+imagem em `ghcr.io/<owner>/shift-catcher` após o job `verify` passar na
+`main`, copia `docker-compose.prod.yml`/`Caddyfile` para a VPS via SSH e
+executa `docker compose up -d`. TLS é automático via Caddy/Let's Encrypt.
+
+Runbook completo (geração da chave SSH de deploy, secrets do GitHub, `.env`
+de produção): [[deploy/README]]. Decisão registrada:
+[[09-Decisions/AUTODEC-0003-CICD-and-VPS-Deploy]].
+
+Endpoint de webhook público, alvo da configuração da GREEN-API:
+`POST https://<seu-dominio>/api/v1/webhooks/green-api`.
