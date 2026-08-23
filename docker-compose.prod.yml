@@ -25,6 +25,8 @@ services:
       GREEN_API_INSTANCE_ID: ${GREEN_API_INSTANCE_ID:-}
       GREEN_API_API_TOKEN: ${GREEN_API_API_TOKEN:-}
       GREEN_API_WEBHOOK_TOKEN: ${GREEN_API_WEBHOOK_TOKEN:-}
+    ports:
+      - "127.0.0.1:8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,23 +37,5 @@ services:
       retries: 12
     restart: unless-stopped
 
-  caddy:
-    image: caddy:2-alpine
-    environment:
-      DOMAIN: ${DOMAIN:?DOMAIN must be set, e.g. shiftcatcher.example.com}
-      ACME_EMAIL: ${ACME_EMAIL:-}
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - app
-    restart: unless-stopped
-
 volumes:
   shift-catcher-postgres:
-  caddy-data:
-  caddy-config:
