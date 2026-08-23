@@ -77,8 +77,8 @@ jobs:
       - name: Upload compose files to VPS
         run: |
           ssh vps "mkdir -p ~/shift-catcher"
-          scp -F ~/.ssh/config docker-compose.prod.yml Caddyfile vps:~/shift-catcher/
-
+          scp -F ~/.ssh/config docker-compose.prod.yml vps:~/shift-catcher/
+          
       - name: Deploy on VPS
         run: |
           ssh vps '
