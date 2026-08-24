@@ -198,8 +198,11 @@ class ClaimService(
      * Deleting is also cosmetic, not transactional. If the person who posted the offer already read
      * the PEGO and assigned the shift, removing the message does not undo that agreement - which is
      * why the reason is recorded and the operator, not a heuristic, decides.
+     *
+     * Deliberately not one transaction. The provider call happens outside the database, so wrapping
+     * the sequence would mean that reporting a refused deletion rolls back the very record of it -
+     * the individual writes are transactional, the whole is not, because the whole cannot be.
      */
-    @Transactional
     fun retract(
         claimId: String,
         request: RetractClaimRequest?,
