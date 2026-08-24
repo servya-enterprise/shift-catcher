@@ -47,6 +47,7 @@ import kotlin.test.assertNotNull
         "shift-catcher.claim.retry-delays-ms[0]=0",
         "shift-catcher.claim.retry-delays-ms[1]=0",
         "shift-catcher.claim.retry-delays-ms[2]=0",
+        "shift-catcher.claim.health-freshness-seconds=0",
     ],
 )
 @AutoConfigureMockMvc
@@ -92,6 +93,7 @@ class ClaimEngineIntegrationTest(
         jdbcTemplate.update("delete from incoming_message")
         jdbcTemplate.update("delete from incoming_provider_event")
         jdbcTemplate.update("delete from allowed_group")
+        jdbcTemplate.update("delete from provider_health")
         sender.reset()
         instanceHealth.operational = true
     }

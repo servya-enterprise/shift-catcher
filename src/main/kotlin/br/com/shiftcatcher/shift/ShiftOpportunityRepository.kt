@@ -102,6 +102,12 @@ class ShiftOpportunityRepository(
     fun findRecent(limit: Int): List<ShiftOpportunity> =
         jdbcTemplate.query("$SELECT_SQL order by detected_at desc, id desc limit ?", ROW_MAPPER, limit)
 
+    /**
+     * Opportunities the rule engine already approved for the automatic path. The permission comes
+     * from the stored evaluation, never from a flag re-read at claim time.
+     */
+    fun findAutoClaimable(limit: Int): List<ShiftOpportunity> = jdbcTemplate.query(AUTO_CLAIMABLE_SQL, ROW_MAPPER, limit)
+
     private companion object {
         val SELECT_SQL =
             """
@@ -173,6 +179,27 @@ class ShiftOpportunityRepository(
                       ends_next_day, location, city, amount, currency, specialty, notes,
                       extraction_method, confidence, ambiguous_fields, resolution_reason,
                       review_note, version, detected_at, extraction_completed_at
+            """.trimIndent()
+
+        val AUTO_CLAIMABLE_SQL =
+            """
+            select o.id, o.source_message_id, o.group_id, o.status, o.shift_date, o.start_time,
+                   o.end_time, o.ends_next_day, o.location, o.city, o.amount, o.currency,
+                   o.specialty, o.notes, o.extraction_method, o.confidence, o.ambiguous_fields,
+                   o.resolution_reason, o.review_note, o.version, o.detected_at,
+                   o.extraction_completed_at
+              from shift_opportunity o
+              join lateral (
+                  select e.auto_claim_allowed
+                    from rule_evaluation e
+                   where e.opportunity_id = o.id
+                   order by e.evaluated_at desc, e.id desc
+                   limit 1
+              ) latest on true
+             where o.status = 'ELIGIBLE'
+               and latest.auto_claim_allowed
+             order by o.detected_at
+             limit ?
             """.trimIndent()
 
         val UPDATE_STATUS_SQL =

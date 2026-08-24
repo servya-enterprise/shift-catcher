@@ -2,9 +2,9 @@ package br.com.shiftcatcher.claim
 
 import br.com.shiftcatcher.foundation.http.ApiProblemException
 import br.com.shiftcatcher.group.AllowedGroupRepository
-import br.com.shiftcatcher.integration.greenapi.WhatsAppInstanceHealth
 import br.com.shiftcatcher.messaging.IncomingMessageRepository
 import br.com.shiftcatcher.reliability.OutboxRepository
+import br.com.shiftcatcher.reliability.ProviderHealthGate
 import br.com.shiftcatcher.rules.EvaluationResult
 import br.com.shiftcatcher.rules.RuleEvaluationRepository
 import br.com.shiftcatcher.shift.OpportunityStatus
@@ -32,7 +32,7 @@ class ClaimService(
     private val evaluationRepository: RuleEvaluationRepository,
     private val groupRepository: AllowedGroupRepository,
     private val messageRepository: IncomingMessageRepository,
-    private val instanceHealth: WhatsAppInstanceHealth,
+    private val providerHealth: ProviderHealthGate,
     private val objectMapper: ObjectMapper,
     private val clock: Clock = Clock.systemUTC(),
 ) {
@@ -80,7 +80,7 @@ class ClaimService(
             // `DEC-005`: auto-claim needs the rule set and the group to both allow it.
             throw notClaimable("Auto-claim is not allowed for this opportunity")
         }
-        if (!currentInstanceOperational()) {
+        if (!providerHealth.isOperational()) {
             throw ApiProblemException(
                 status = HttpStatus.CONFLICT,
                 code = "INSTANCE_NOT_OPERATIONAL",
@@ -183,8 +183,6 @@ class ClaimService(
         )
         return loadClaim(claimId).toResponse(attemptRepository.findByClaimId(claim.id))
     }
-
-    private fun currentInstanceOperational(): Boolean = runCatching { instanceHealth.getState().operational }.getOrDefault(false)
 
     private fun notClaimable(detail: String): ApiProblemException =
         ApiProblemException(

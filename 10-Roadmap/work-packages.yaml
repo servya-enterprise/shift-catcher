@@ -86,7 +86,7 @@ work_packages:
   - AI cannot bypass rules
 - id: WP-POC-006
   title: Claim Engine & quoted PEGO
-  status: READY
+  status: DONE
   depends_on:
   - WP-POC-005
   goal: Claim manual/auto e outbox.
@@ -101,7 +101,7 @@ work_packages:
   - quote immutable
 - id: WP-POC-007
   title: Reliability & observability
-  status: PLANNED
+  status: READY
   depends_on:
   - WP-POC-006
   goal: Recovery, health, audit e métricas.

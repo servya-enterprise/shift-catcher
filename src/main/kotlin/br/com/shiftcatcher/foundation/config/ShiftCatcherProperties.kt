@@ -19,6 +19,10 @@ data class ShiftCatcherProperties(
         val retryDelaysMs: List<Long> = listOf(0, 150, 400, 800, 1500),
         val workerEnabled: Boolean = true,
         val leaseSeconds: Long = 60,
+        /** A provider observation older than this is treated as no answer, which blocks auto-claim. */
+        val healthFreshnessSeconds: Long = 90,
+        /** Auto-claim stays off until the operator turns it on here *and* in the active rule set. */
+        val autoClaimEnabled: Boolean = false,
     )
 
     data class Security(
