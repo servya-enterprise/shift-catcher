@@ -15,7 +15,7 @@ endpoints:
   method: GET
   path: /metrics/latency
   work_package: WP-POC-007
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-004
   method: POST
   path: /webhooks/green-api
