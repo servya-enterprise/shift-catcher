@@ -105,7 +105,7 @@ endpoints:
   method: POST
   path: /opportunities/{opportunityId}/reevaluate
   work_package: WP-POC-005
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-022
   method: POST
   path: /opportunities/{opportunityId}/ignore
@@ -135,32 +135,32 @@ endpoints:
   method: GET
   path: /rule-sets
   work_package: WP-POC-005
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-028
   method: POST
   path: /rule-sets
   work_package: WP-POC-005
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-029
   method: GET
   path: /rule-sets/{ruleSetId}
   work_package: WP-POC-005
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-030
   method: PATCH
   path: /rule-sets/{ruleSetId}
   work_package: WP-POC-005
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-031
   method: POST
   path: /rule-sets/{ruleSetId}/activate
   work_package: WP-POC-005
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-032
   method: POST
   path: /rule-sets/{ruleSetId}/simulate
   work_package: WP-POC-005
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-033
   method: POST
   path: /poc/send-test-reply
