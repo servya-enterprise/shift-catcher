@@ -51,6 +51,7 @@ class ReliabilityIntegrationTest(
     @Autowired private val processor: ClaimOutboxProcessor,
     @Autowired private val healthGate: ProviderHealthGate,
     @Autowired private val autoClaimTrigger: AutoClaimTrigger,
+    @Autowired private val autoEvaluationTrigger: br.com.shiftcatcher.rules.AutoEvaluationTrigger,
     @Autowired private val claimService: ClaimService,
 ) {
     class ToggleableInstanceHealth : WhatsAppInstanceHealth {
@@ -173,6 +174,45 @@ class ReliabilityIntegrationTest(
 
         assertEquals("PROVIDER_STATE_UNKNOWN", summary.skippedReason)
         assertEquals(0, countOf("shift_claim"))
+    }
+
+    @Test
+    fun `automatic evaluation promotes what detection parked in EVALUATING`() {
+        ingestOffer()
+        activateRuleSet("""{"name":"permissivo","definition":{}}""")
+        assertEquals(
+            "EVALUATING",
+            jdbcTemplate.queryForObject("select status from shift_opportunity", String::class.java),
+            "detection stops here; the webhook contract forbids rules in the request",
+        )
+
+        val evaluated = autoEvaluationTrigger.runOnce()
+
+        assertEquals(1, evaluated)
+        assertEquals(
+            "ELIGIBLE",
+            jdbcTemplate.queryForObject("select status from shift_opportunity", String::class.java),
+        )
+        assertEquals(0, sender.calls.get(), "evaluating decides, it never sends")
+    }
+
+    @Test
+    fun `automatic evaluation leaves opportunities waiting for a human alone`() {
+        // A vague offer lands in REVIEW_REQUIRED; re-running rules over it would overwrite a verdict
+        // nobody has answered yet.
+        mockMvc.post("/api/v1/groups") {
+            adminBearer()
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"providerChatId":"$GROUP_CHAT_ID","displayName":"Plantoes"}"""
+        }
+        postWebhookText("tem vaga de plantao alguem quer", "vague-auto-1")
+        activateRuleSet("""{"name":"permissivo","definition":{}}""")
+
+        assertEquals(0, autoEvaluationTrigger.runOnce())
+        assertEquals(
+            "REVIEW_REQUIRED",
+            jdbcTemplate.queryForObject("select status from shift_opportunity", String::class.java),
+        )
     }
 
     @Test
@@ -351,6 +391,36 @@ class ReliabilityIntegrationTest(
                     """.trimIndent()
             }.andExpect { status { isOk() } }
         return jdbcTemplate.queryForObject("select id from shift_opportunity", UUID::class.java).toString()
+    }
+
+    private fun postWebhookText(
+        text: String,
+        providerMessageId: String,
+    ) {
+        mockMvc
+            .post("/api/v1/webhooks/green-api") {
+                header("Authorization", "Bearer test-webhook-token")
+                contentType = MediaType.APPLICATION_JSON
+                content =
+                    """
+                    {
+                      "typeWebhook": "incomingMessageReceived",
+                      "instanceData": {"idInstance": 123456},
+                      "timestamp": 1787608800,
+                      "idMessage": "$providerMessageId",
+                      "senderData": {
+                        "chatId": "$GROUP_CHAT_ID",
+                        "chatName": "Plantoes",
+                        "sender": "5511999999999@c.us",
+                        "senderName": "Pessoa"
+                      },
+                      "messageData": {
+                        "typeMessage": "textMessage",
+                        "textMessageData": {"textMessage": "$text"}
+                      }
+                    }
+                    """.trimIndent()
+            }.andExpect { status { isOk() } }
     }
 
     private fun postClaim(opportunityId: String) {

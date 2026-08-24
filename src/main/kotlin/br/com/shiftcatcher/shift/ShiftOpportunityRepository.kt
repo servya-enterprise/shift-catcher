@@ -108,6 +108,18 @@ class ShiftOpportunityRepository(
      */
     fun findAutoClaimable(limit: Int): List<ShiftOpportunity> = jdbcTemplate.query(AUTO_CLAIMABLE_SQL, ROW_MAPPER, limit)
 
+    /**
+     * Opportunities the detection stage parked in `EVALUATING`. Deliberately excludes
+     * `REVIEW_REQUIRED`: those are waiting for a human, and re-running rules over them would keep
+     * overwriting a verdict nobody has answered yet.
+     */
+    fun findAwaitingEvaluation(limit: Int): List<ShiftOpportunity> =
+        jdbcTemplate.query(
+            "$SELECT_SQL where status = 'EVALUATING' order by detected_at limit ?",
+            ROW_MAPPER,
+            limit,
+        )
+
     private companion object {
         val SELECT_SQL =
             """

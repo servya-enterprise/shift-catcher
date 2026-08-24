@@ -23,6 +23,11 @@ data class ShiftCatcherProperties(
         val healthFreshnessSeconds: Long = 90,
         /** Auto-claim stays off until the operator turns it on here *and* in the active rule set. */
         val autoClaimEnabled: Boolean = false,
+        /**
+         * Automatic evaluation only computes verdicts, never sends, so it is on by default: without
+         * it an opportunity would sit in `EVALUATING` forever.
+         */
+        val autoEvaluateEnabled: Boolean = true,
     )
 
     data class Security(
