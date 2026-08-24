@@ -146,7 +146,7 @@ class ProviderHealthGate(
 class ProviderHealthMonitor(
     private val gate: ProviderHealthGate,
 ) {
-    @Scheduled(fixedDelayString = "\${shift-catcher.claim.health-interval-ms:30000}")
+    @Scheduled(fixedDelayString = "\${shift-catcher.claim.health-interval-ms:60000}")
     fun observe() {
         gate.refresh()
     }

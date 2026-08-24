@@ -48,15 +48,15 @@ class FoundationIntegrationTest(
     }
 
     @Test
-    fun `status reports the transport gate as evidenced and rules as current`() {
+    fun `status reports the transport gate as evidenced and reliability as current`() {
         mockMvc
             .get("/api/v1/poc/status") {
                 header("Authorization", "Bearer test-admin-token")
             }.andExpect {
                 status { isOk() }
                 header { string("X-Correlation-Id", matchesPattern("[0-9a-f-]{36}")) }
-                jsonPath("$.status") { value("RULES_IN_PROGRESS") }
-                jsonPath("$.currentWorkPackage") { value("WP-POC-005") }
+                jsonPath("$.status") { value("RELIABILITY_IN_PROGRESS") }
+                jsonPath("$.currentWorkPackage") { value("WP-POC-007") }
                 jsonPath("$.greenApiTransport") { value("VERIFIED") }
             }
     }
