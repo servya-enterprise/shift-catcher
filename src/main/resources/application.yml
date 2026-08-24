@@ -41,8 +41,12 @@ shift-catcher:
     known-cities: ${DETECTION_KNOWN_CITIES:}
     timezone: ${DETECTION_TIMEZONE:America/Sao_Paulo}
   ai:
-    # Stays false until a real adapter exists: DEC-004 and the fallback policy both require it.
+    # Stage 3 of the pipeline: consulted only for a candidate the deterministic parser left
+    # ambiguous, and never inside the webhook request.
     enabled: ${AI_PARSER_ENABLED:false}
+    base-url: ${AI_BASE_URL:}
+    model: ${AI_MODEL:qwen2.5:3b}
+    timeout: ${AI_TIMEOUT:30s}
   claim:
     # The automatic path needs this AND the active rule set AND the group flag. Default is off.
     auto-claim-enabled: ${AUTO_CLAIM_ENABLED:false}

@@ -1,5 +1,6 @@
 package br.com.shiftcatcher.rules
 
+import br.com.shiftcatcher.shift.ExtractionMethod
 import br.com.shiftcatcher.shift.ShiftOpportunity
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -139,6 +140,11 @@ class RuleEngine {
         }
         if (!context.groupAutoClaimEnabled) {
             autoClaimReasons += RuleReason.AUTO_CLAIM_DISABLED_FOR_GROUP
+        }
+        // An AI reading stays eligible for a one-click manual claim, but sending on its own is a
+        // separate permission: a hallucination here would be a real message in a real group.
+        if (opportunity.extractionMethod == ExtractionMethod.AI_FALLBACK && !definition.allowAutoClaimFromAi) {
+            autoClaimReasons += RuleReason.AUTO_CLAIM_DISABLED_FOR_AI_EXTRACTION
         }
         return RuleOutcome(
             result = result,

@@ -55,7 +55,19 @@ data class ShiftCatcherProperties(
      */
     data class Ai(
         val enabled: Boolean = false,
-    )
+        /** Ollama base URL, e.g. `http://garimpo-zap-ollama-1:11434`. Empty means no adapter. */
+        val baseUrl: String = "",
+        val model: String = "qwen2.5:3b",
+        /**
+         * Hard ceiling on a single inference. The model answers in seconds on this hardware, but a
+         * cold load takes far longer, and nothing in the pipeline may wait indefinitely.
+         */
+        val timeout: java.time.Duration = java.time.Duration.ofSeconds(30),
+        /** Identical texts are common in these groups; re-inferring them costs seconds for nothing. */
+        val cacheEnabled: Boolean = true,
+    ) {
+        fun isConfigured(): Boolean = enabled && baseUrl.isNotBlank()
+    }
 
     data class GreenApi(
         val apiUrl: String = "",

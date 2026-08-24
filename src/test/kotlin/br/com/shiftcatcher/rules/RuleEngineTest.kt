@@ -172,6 +172,39 @@ class RuleEngineTest {
     }
 
     @Test
+    fun `an AI reading is eligible but not automatically claimable by default`() {
+        val definition = RuleDefinition(autoClaimEnabled = true)
+        val aiRead = opportunity(extractionMethod = ExtractionMethod.AI_FALLBACK)
+
+        val guarded = engine.evaluate(context(definition, aiRead, groupAutoClaimEnabled = true))
+
+        assertEquals(EvaluationResult.ELIGIBLE, guarded.result, "a human can still claim it in one call")
+        assertFalse(guarded.autoClaimAllowed, "but the model does not get to send on its own")
+        assertTrue(RuleReason.AUTO_CLAIM_DISABLED_FOR_AI_EXTRACTION in guarded.reasons)
+
+        val permitted =
+            engine.evaluate(
+                context(
+                    definition.copy(allowAutoClaimFromAi = true),
+                    aiRead,
+                    groupAutoClaimEnabled = true,
+                ),
+            )
+        assertTrue(permitted.autoClaimAllowed, "the operator can grant it explicitly")
+    }
+
+    @Test
+    fun `a deterministic reading is unaffected by the AI gate`() {
+        val outcome =
+            engine.evaluate(
+                context(RuleDefinition(autoClaimEnabled = true), groupAutoClaimEnabled = true),
+            )
+
+        assertTrue(outcome.autoClaimAllowed)
+        assertTrue(RuleReason.AUTO_CLAIM_DISABLED_FOR_AI_EXTRACTION !in outcome.reasons)
+    }
+
+    @Test
     fun `a rejection outranks a review when both apply`() {
         val outcome =
             engine.evaluate(

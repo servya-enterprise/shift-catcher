@@ -37,6 +37,9 @@ services:
       DETECTION_KNOWN_CITIES: ${DETECTION_KNOWN_CITIES:-}
       DETECTION_TIMEZONE: ${DETECTION_TIMEZONE:-America/Sao_Paulo}
       AI_PARSER_ENABLED: ${AI_PARSER_ENABLED:-false}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-qwen2.5:3b}
+      AI_TIMEOUT: ${AI_TIMEOUT:-30s}
     ports:
       - "127.0.0.1:8081:8080"
     depends_on:
@@ -48,6 +51,16 @@ services:
       timeout: 3s
       retries: 12
     restart: unless-stopped
+    networks:
+      - default
+      - ai
 
 volumes:
   shift-catcher-postgres:
+
+networks:
+  # The inference service is shared with other projects on this host, so it is joined as an
+  # existing network rather than owned here.
+  ai:
+    external: true
+    name: garimpo-zap_garimpo-internal

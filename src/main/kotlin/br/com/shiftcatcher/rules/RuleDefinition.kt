@@ -23,6 +23,12 @@ data class RuleDefinition(
     val requiredFields: List<String> = emptyList(),
     val maxMessageAgeMinutes: Long? = null,
     val requireOperationalInstance: Boolean = false,
+    /**
+     * Whether an opportunity the model had to interpret may be claimed automatically. Default is
+     * false: the AI widens what we can read, but arming it to send on its own is a separate
+     * decision the operator makes once the readings have been seen.
+     */
+    val allowAutoClaimFromAi: Boolean = false,
 ) {
     fun validate() {
         minConfidence?.let {
@@ -84,4 +90,5 @@ object RuleReason {
     const val RULE_EVALUATION_FAILED = "RULE_EVALUATION_FAILED"
     const val AUTO_CLAIM_DISABLED_GLOBALLY = "AUTO_CLAIM_DISABLED_GLOBALLY"
     const val AUTO_CLAIM_DISABLED_FOR_GROUP = "AUTO_CLAIM_DISABLED_FOR_GROUP"
+    const val AUTO_CLAIM_DISABLED_FOR_AI_EXTRACTION = "AUTO_CLAIM_DISABLED_FOR_AI_EXTRACTION"
 }
