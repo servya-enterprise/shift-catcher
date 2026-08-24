@@ -47,6 +47,12 @@ shift-catcher:
     # The automatic path needs this AND the active rule set AND the group flag. Default is off.
     auto-claim-enabled: ${AUTO_CLAIM_ENABLED:false}
     worker-enabled: ${CLAIM_WORKER_ENABLED:true}
+    # Reaction speed is the product: these three polls are what stands between a message arriving
+    # and PEGO leaving, so they are deliberately tight. Each is one small indexed query.
+    auto-evaluate-interval-ms: ${AUTO_EVALUATE_INTERVAL_MS:1000}
+    auto-claim-interval-ms: ${AUTO_CLAIM_INTERVAL_MS:1000}
+    poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:500}
+    health-interval-ms: ${HEALTH_INTERVAL_MS:60000}
   green-api:
     api-url: ${GREEN_API_API_URL:}
     instance-id: ${GREEN_API_INSTANCE_ID:}
