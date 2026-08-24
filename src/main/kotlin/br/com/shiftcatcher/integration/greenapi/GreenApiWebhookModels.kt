@@ -38,6 +38,8 @@ data class WebhookIngestionResponse(
     val persistedAt: java.time.Instant? = null,
     val processingStatus: String? = null,
     val ignoredReason: String? = null,
+    val candidate: Boolean? = null,
+    val opportunityId: String? = null,
 )
 
 enum class WebhookIngestionStatus {
