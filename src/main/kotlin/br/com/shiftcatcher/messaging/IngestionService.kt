@@ -1,5 +1,7 @@
 package br.com.shiftcatcher.messaging
 
+import br.com.shiftcatcher.detection.AnalyzeMessageCommand
+import br.com.shiftcatcher.detection.MessageAnalysisService
 import br.com.shiftcatcher.foundation.http.ApiProblemException
 import br.com.shiftcatcher.group.AllowedGroupRepository
 import org.springframework.http.HttpStatus
@@ -19,6 +21,7 @@ class IngestionService(
     private val eventRepository: IncomingProviderEventRepository,
     private val messageRepository: IncomingMessageRepository,
     private val groupRepository: AllowedGroupRepository,
+    private val analysisService: MessageAnalysisService,
     private val clock: Clock = Clock.systemUTC(),
 ) {
     @Transactional
@@ -42,6 +45,7 @@ class IngestionService(
         }
 
         val decision = gate(message.chatId)
+        val normalizedText = normalize(message.messageText)
         val messageId =
             messageRepository.upsert(
                 NormalizedMessage(
@@ -52,19 +56,40 @@ class IngestionService(
                     chatName = message.chatName,
                     senderId = message.senderId,
                     senderName = message.senderName,
-                    text = normalize(message.messageText),
+                    text = normalizedText,
                     providerTimestamp = message.providerTimestamp,
                     receivedAt = message.webhookReceivedAt,
                 ),
             )
-        eventRepository.updateProcessing(recorded.id, decision.status, decision.reason, clock.instant())
+
+        // Detection and deterministic extraction are cheap and side-effect free, so they run inside
+        // the webhook transaction. The AI fallback is explicitly withheld here: the webhook contract
+        // forbids a model call inside the request.
+        val analysis =
+            if (decision.status == ProcessingStatus.PENDING) {
+                analysisService.analyze(
+                    AnalyzeMessageCommand(
+                        messageId = messageId,
+                        groupId = decision.groupId,
+                        text = normalizedText,
+                        messageTimestamp = message.providerTimestamp,
+                        allowAiFallback = false,
+                    ),
+                )
+            } else {
+                null
+            }
+        val status = if (analysis != null) ProcessingStatus.PROCESSED else decision.status
+        eventRepository.updateProcessing(recorded.id, status, decision.reason, clock.instant())
         return IngestionResult(
             duplicate = false,
             eventId = recorded.id,
             messageId = messageId,
             persistedAt = recorded.persistedAt,
-            processingStatus = decision.status,
+            processingStatus = status,
             ignoredReason = decision.reason,
+            candidate = analysis?.candidate,
+            opportunityId = analysis?.opportunity?.id,
         )
     }
 
@@ -84,21 +109,41 @@ class IngestionService(
     fun reprocess(messageId: String): ReprocessResponse {
         val record = load(messageId)
         val decision = gate(record.chatId)
+        val reprocessedAt = clock.instant()
+
+        // Outside the webhook request the AI fallback is allowed, so this is also the entry point
+        // that can resolve a message the deterministic parser left ambiguous.
+        val analysis =
+            if (decision.status == ProcessingStatus.PENDING) {
+                analysisService.analyze(
+                    AnalyzeMessageCommand(
+                        messageId = record.id,
+                        groupId = decision.groupId,
+                        text = record.text,
+                        messageTimestamp = record.providerTimestamp,
+                        allowAiFallback = true,
+                    ),
+                )
+            } else {
+                null
+            }
+        val status = if (analysis != null) ProcessingStatus.PROCESSED else decision.status
         val changed =
-            decision.status != record.processingStatus ||
+            status != record.processingStatus ||
                 decision.reason != record.ignoredReason ||
                 decision.groupId != record.groupId
-        val reprocessedAt = clock.instant()
         if (changed) {
             messageRepository.updateGroup(record.id, decision.groupId)
-            eventRepository.updateProcessing(record.providerEventId, decision.status, decision.reason, reprocessedAt)
         }
+        eventRepository.updateProcessing(record.providerEventId, status, decision.reason, reprocessedAt)
         return ReprocessResponse(
             messageId = record.id.toString(),
             groupId = decision.groupId?.toString(),
-            processingStatus = decision.status,
+            processingStatus = status,
             ignoredReason = decision.reason,
             changed = changed,
+            candidate = analysis?.candidate,
+            opportunityId = analysis?.opportunity?.id?.toString(),
             reprocessedAt = reprocessedAt,
         )
     }
@@ -165,6 +210,8 @@ data class IngestionResult(
     val persistedAt: Instant,
     val processingStatus: ProcessingStatus,
     val ignoredReason: IgnoredReason?,
+    val candidate: Boolean? = null,
+    val opportunityId: UUID? = null,
 )
 
 data class IncomingMessageResponse(
@@ -196,5 +243,7 @@ data class ReprocessResponse(
     val processingStatus: ProcessingStatus,
     val ignoredReason: IgnoredReason?,
     val changed: Boolean,
+    val candidate: Boolean? = null,
+    val opportunityId: String? = null,
     val reprocessedAt: Instant,
 )

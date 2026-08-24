@@ -84,6 +84,8 @@ class GreenApiWebhookService(
             persistedAt = result.persistedAt,
             processingStatus = result.processingStatus.name,
             ignoredReason = result.ignoredReason?.name,
+            candidate = result.candidate,
+            opportunityId = result.opportunityId?.toString(),
         )
     }
 

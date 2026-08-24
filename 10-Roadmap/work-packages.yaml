@@ -30,7 +30,7 @@ work_packages:
   - non-operational blocks send
 - id: WP-POC-003
   title: Ingestion & group allowlist
-  status: READY
+  status: DONE
   depends_on:
   - WP-POC-002
   goal: Persistir/deduplicar e filtrar grupos.
@@ -52,7 +52,7 @@ work_packages:
   - fast webhook
 - id: WP-POC-004
   title: Detection & extraction
-  status: PLANNED
+  status: READY
   depends_on:
   - WP-POC-003
   goal: Candidate filter, deterministic extraction e AI fallback.

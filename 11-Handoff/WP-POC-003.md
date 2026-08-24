@@ -1,6 +1,10 @@
 # WP-POC-003 Handoff
 
-Status: DONE (automated gates); no production observation is claimed yet — see "Residual risks".
+Status: DONE. Automated gates passed and the ingestion path was observed against the live instance
+on 2026-08-24: the operator registered the real group through EP-008, promoted the already-captured
+message with EP-017, and a subsequently posted group message landed as `PENDING` with its `groupId`
+resolved and no `ignoredReason`. EP-008/EP-015/EP-017 are therefore `VERIFIED`; the remaining
+allowlist endpoints stay `IMPLEMENTED` because they have only been exercised by the test suite.
 
 ## Scope
 Ingestion and the group allowlist: EP-007..EP-014 (allowlist) and EP-015..EP-017 (normalized
