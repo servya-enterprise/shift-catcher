@@ -24,6 +24,17 @@ data class RuleDefinition(
     val maxMessageAgeMinutes: Long? = null,
     val requireOperationalInstance: Boolean = false,
     /**
+     * What to do when the offer collides with something she already has. Null keeps the rule
+     * unenforced, like every other optional field here, which is what lets rule set v1 keep
+     * evaluating exactly as it did before this field existed.
+     */
+    val agendaConflictPolicy: AgendaConflictPolicy? = null,
+    /**
+     * How a collision is recognised. Two shifts on one date are ordinary in medicine as long as the
+     * hours do not cross, so the default compares windows rather than dates.
+     */
+    val agendaConflictMode: AgendaConflictMode = AgendaConflictMode.OVERLAPPING,
+    /**
      * Whether an opportunity the model had to interpret may be claimed automatically. Default is
      * false: the AI widens what we can read, but arming it to send on its own is a separate
      * decision the operator makes once the readings have been seen.
@@ -55,6 +66,20 @@ data class RuleDefinition(
     }
 }
 
+/** `REJECT` treats a collision as a fact; `REVIEW` hands it to the operator to settle. */
+enum class AgendaConflictPolicy {
+    REJECT,
+    REVIEW,
+}
+
+enum class AgendaConflictMode {
+    /** Only crossing hours collide. An overnight shift is compared across the midnight it spans. */
+    OVERLAPPING,
+
+    /** Any second commitment on the same date collides, whatever the hours. */
+    SAME_DAY,
+}
+
 enum class RuleSetStatus {
     DRAFT,
     ACTIVE,
@@ -84,6 +109,10 @@ object RuleReason {
     const val CITY_NOT_ALLOWED = "CITY_NOT_ALLOWED"
     const val LOCATION_BLOCKED = "LOCATION_BLOCKED"
     const val MESSAGE_TOO_OLD = "MESSAGE_TOO_OLD"
+    const val AGENDA_CONFLICT = "AGENDA_CONFLICT"
+
+    /** A commitment is there but one of the two windows is unknown, so nothing can be ruled out. */
+    const val AGENDA_CONFLICT_UNCERTAIN = "AGENDA_CONFLICT_UNCERTAIN"
     const val INSTANCE_NOT_OPERATIONAL = "INSTANCE_NOT_OPERATIONAL"
     const val INSTANCE_STATE_UNKNOWN = "INSTANCE_STATE_UNKNOWN"
     const val GROUP_DISABLED = "GROUP_DISABLED"

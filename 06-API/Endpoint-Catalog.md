@@ -41,7 +41,16 @@ Base: `/api/v1`
 | EP-035 | POST | `/poc/benchmark/start` | Inicia benchmark. |
 | EP-036 | GET | `/poc/benchmark/{benchmarkId}` | Resultado benchmark. |
 | EP-037 | POST | `/claims/{claimId}/retract` | Retrata claim e apaga o PEGO enviado. |
+| EP-038 | GET | `/settings/claim-message` | Texto da resposta configurado. |
+| EP-039 | PUT | `/settings/claim-message` | Altera o texto da resposta. |
+| EP-040 | GET | `/availability` | Compromissos: cadastrados + claims. |
+| EP-041 | POST | `/availability` | Cadastra plantão obtido fora daqui. |
+| EP-042 | DELETE | `/availability/{entryId}` | Remove compromisso cadastrado. |
 
-**Total baseline: 37 operações HTTP.**
+**Total baseline: 42 operações HTTP.**
+
+`EP-038` a `EP-042` são pós-POC (`12-MVP/MVP-Scope.md`, `WP-MVP-001`): ampliam o contrato de 37
+para 42 operações deliberadamente e às claras. O padrão continua `PEGO` e a regra de agenda só
+vale quando um rule set a configura, de modo que a evidência do `WP-POC-008` não muda.
 
 Endpoints admin da POC podem ficar restritos a localhost/VPN. Se forem expostos publicamente, adicionar auth antes do deploy.

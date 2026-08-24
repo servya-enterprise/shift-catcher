@@ -1,5 +1,6 @@
 package br.com.shiftcatcher.rules
 
+import br.com.shiftcatcher.availability.AvailabilityService
 import br.com.shiftcatcher.foundation.config.ShiftCatcherProperties
 import br.com.shiftcatcher.foundation.http.ApiProblemException
 import br.com.shiftcatcher.group.AllowedGroupRepository
@@ -27,6 +28,7 @@ class OpportunityEvaluationService(
     private val opportunityRepository: ShiftOpportunityRepository,
     private val groupRepository: AllowedGroupRepository,
     private val messageRepository: IncomingMessageRepository,
+    private val availabilityService: AvailabilityService,
     private val properties: ShiftCatcherProperties,
     private val clock: Clock = Clock.systemUTC(),
 ) {
@@ -144,6 +146,14 @@ class OpportunityEvaluationService(
             instanceOperational = null,
             now = now,
             timezone = properties.detection.timezone,
+            // Read only when a rule set actually asks about the diary, so an unconfigured conflict
+            // rule costs no queries at all.
+            commitments =
+                if (ruleSet.definition.agendaConflictPolicy == null || opportunity.shiftDate == null) {
+                    emptyList()
+                } else {
+                    availabilityService.commitmentsAround(opportunity.shiftDate, opportunity.id)
+                },
         )
     }
 

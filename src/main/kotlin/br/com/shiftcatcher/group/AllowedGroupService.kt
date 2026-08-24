@@ -30,6 +30,7 @@ class AllowedGroupService(
                 enabled = request.enabled ?: true,
                 // Auto-claim is never enabled implicitly: DEC-005 keeps the unsafe direction opt-in only.
                 autoClaimEnabled = request.autoClaimEnabled ?: false,
+                claimMessage = claimMessageOrNull(request.claimMessage),
             )
                 ?: throw ApiProblemException(
                     status = HttpStatus.CONFLICT,
@@ -61,11 +62,20 @@ class AllowedGroupService(
                 request.displayName.isBlank() -> null
                 else -> bounded(request.displayName, "displayName", 256)
             }
+        // Same convention as displayName: omitted keeps it, blank clears it back to the global
+        // wording. There is no third state to express, so none is invented.
+        val claimMessage =
+            when {
+                request.claimMessage == null -> current.claimMessage
+                request.claimMessage.isBlank() -> null
+                else -> claimMessageOrNull(request.claimMessage)
+            }
         return applyUpdate(
             current = current,
             displayName = displayName,
             enabled = request.enabled ?: current.enabled,
             autoClaimEnabled = request.autoClaimEnabled ?: current.autoClaimEnabled,
+            claimMessage = claimMessage,
             expectedVersion = version,
         )
     }
@@ -82,6 +92,7 @@ class AllowedGroupService(
             displayName = current.displayName,
             enabled = enabled,
             autoClaimEnabled = current.autoClaimEnabled,
+            claimMessage = current.claimMessage,
             expectedVersion = current.version,
         )
     }
@@ -98,6 +109,7 @@ class AllowedGroupService(
             displayName = current.displayName,
             enabled = current.enabled,
             autoClaimEnabled = autoClaimEnabled,
+            claimMessage = current.claimMessage,
             expectedVersion = current.version,
         )
     }
@@ -116,6 +128,7 @@ class AllowedGroupService(
         displayName: String?,
         enabled: Boolean,
         autoClaimEnabled: Boolean,
+        claimMessage: String?,
         expectedVersion: Int,
     ): AllowedGroupResponse {
         // A request that would not change anything does not consume a version, so repeating a
@@ -123,7 +136,8 @@ class AllowedGroupService(
         val unchanged =
             displayName == current.displayName &&
                 enabled == current.enabled &&
-                autoClaimEnabled == current.autoClaimEnabled
+                autoClaimEnabled == current.autoClaimEnabled &&
+                claimMessage == current.claimMessage
         if (unchanged && expectedVersion == current.version) {
             return current.toResponse()
         }
@@ -133,6 +147,7 @@ class AllowedGroupService(
                 displayName = displayName,
                 enabled = enabled,
                 autoClaimEnabled = autoClaimEnabled,
+                claimMessage = claimMessage,
                 expectedVersion = expectedVersion,
             )?.toResponse()
             ?: throw staleVersion()
@@ -168,6 +183,14 @@ class AllowedGroupService(
         return bounded(result, field, maximum)
     }
 
+    /** Blank is not an override, it is the absence of one, and the database refuses it either way. */
+    private fun claimMessageOrNull(value: String?): String? {
+        val message = value?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        bounded(message, "claimMessage", MAX_CLAIM_MESSAGE)
+        require(!message.contains('\n')) { "claimMessage must be a single line" }
+        return message
+    }
+
     private fun bounded(
         value: String,
         field: String,
@@ -184,10 +207,15 @@ class AllowedGroupService(
             displayName = displayName,
             enabled = enabled,
             autoClaimEnabled = autoClaimEnabled,
+            claimMessage = claimMessage,
             version = version,
             createdAt = createdAt,
             updatedAt = updatedAt,
         )
+
+    private companion object {
+        const val MAX_CLAIM_MESSAGE = 512
+    }
 }
 
 data class RegisterGroupRequest(
@@ -195,12 +223,15 @@ data class RegisterGroupRequest(
     val displayName: String? = null,
     val enabled: Boolean? = null,
     val autoClaimEnabled: Boolean? = null,
+    val claimMessage: String? = null,
 )
 
 data class PatchGroupRequest(
     val displayName: String? = null,
     val enabled: Boolean? = null,
     val autoClaimEnabled: Boolean? = null,
+    /** Omit to keep the current override, send blank to fall back to the global wording. */
+    val claimMessage: String? = null,
     val version: Int? = null,
 )
 
@@ -214,6 +245,7 @@ data class AllowedGroupResponse(
     val displayName: String?,
     val enabled: Boolean,
     val autoClaimEnabled: Boolean,
+    val claimMessage: String?,
     val version: Int,
     val createdAt: Instant,
     val updatedAt: Instant,

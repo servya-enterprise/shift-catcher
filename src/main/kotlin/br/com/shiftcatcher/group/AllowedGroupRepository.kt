@@ -25,9 +25,10 @@ class AllowedGroupRepository(
         displayName: String?,
         enabled: Boolean,
         autoClaimEnabled: Boolean,
+        claimMessage: String?,
     ): AllowedGroup? =
         jdbcTemplate
-            .query(INSERT_SQL, ROW_MAPPER, providerChatId, displayName, enabled, autoClaimEnabled)
+            .query(INSERT_SQL, ROW_MAPPER, providerChatId, displayName, enabled, autoClaimEnabled, claimMessage)
             .firstOrNull()
 
     /**
@@ -40,27 +41,29 @@ class AllowedGroupRepository(
         displayName: String?,
         enabled: Boolean,
         autoClaimEnabled: Boolean,
+        claimMessage: String?,
         expectedVersion: Int,
     ): AllowedGroup? =
         jdbcTemplate
-            .query(UPDATE_SQL, ROW_MAPPER, displayName, enabled, autoClaimEnabled, id, expectedVersion)
+            .query(UPDATE_SQL, ROW_MAPPER, displayName, enabled, autoClaimEnabled, claimMessage, id, expectedVersion)
             .firstOrNull()
 
     private companion object {
         val SELECT_SQL =
             """
-            select id, provider_chat_id, display_name, enabled, auto_claim_enabled, version,
-                   created_at, updated_at
+            select id, provider_chat_id, display_name, enabled, auto_claim_enabled, claim_message,
+                   version, created_at, updated_at
               from allowed_group
             """.trimIndent()
 
         val INSERT_SQL =
             """
-            insert into allowed_group (provider_chat_id, display_name, enabled, auto_claim_enabled)
-            values (?, ?, ?, ?)
+            insert into allowed_group (
+                provider_chat_id, display_name, enabled, auto_claim_enabled, claim_message
+            ) values (?, ?, ?, ?, ?)
             on conflict (provider_chat_id) do nothing
-            returning id, provider_chat_id, display_name, enabled, auto_claim_enabled, version,
-                      created_at, updated_at
+            returning id, provider_chat_id, display_name, enabled, auto_claim_enabled, claim_message,
+                      version, created_at, updated_at
             """.trimIndent()
 
         val UPDATE_SQL =
@@ -69,12 +72,13 @@ class AllowedGroupRepository(
                set display_name = ?,
                    enabled = ?,
                    auto_claim_enabled = ?,
+                   claim_message = ?,
                    version = version + 1,
                    updated_at = current_timestamp
              where id = ?
                and version = ?
-            returning id, provider_chat_id, display_name, enabled, auto_claim_enabled, version,
-                      created_at, updated_at
+            returning id, provider_chat_id, display_name, enabled, auto_claim_enabled, claim_message,
+                      version, created_at, updated_at
             """.trimIndent()
 
         val ROW_MAPPER =
@@ -85,6 +89,7 @@ class AllowedGroupRepository(
                     displayName = resultSet.getString("display_name"),
                     enabled = resultSet.getBoolean("enabled"),
                     autoClaimEnabled = resultSet.getBoolean("auto_claim_enabled"),
+                    claimMessage = resultSet.getString("claim_message"),
                     version = resultSet.getInt("version"),
                     createdAt = resultSet.getTimestamp("created_at").toInstant(),
                     updatedAt = resultSet.getTimestamp("updated_at").toInstant(),
@@ -99,6 +104,8 @@ data class AllowedGroup(
     val displayName: String?,
     val enabled: Boolean,
     val autoClaimEnabled: Boolean,
+    /** Null means this group uses the global wording; see `ClaimMessageService`. */
+    val claimMessage: String?,
     val version: Int,
     val createdAt: Instant,
     val updatedAt: Instant,

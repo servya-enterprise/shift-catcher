@@ -36,6 +36,7 @@ class ClaimService(
     private val evaluationRepository: RuleEvaluationRepository,
     private val groupRepository: AllowedGroupRepository,
     private val messageRepository: IncomingMessageRepository,
+    private val claimMessageService: ClaimMessageService,
     private val providerHealth: ProviderHealthGate,
     private val messageRetractor: WhatsAppMessageRetractor,
     private val auditRepository: AuditRepository,
@@ -117,6 +118,9 @@ class ClaimService(
                     // Frozen here so the worker can never resolve a different quote target later.
                     chatId = message.chatId,
                     quotedMessageId = message.providerMessageId,
+                    // Frozen for the same reason as the quote: what was sent must stay knowable
+                    // after the wording has been changed.
+                    message = claimMessageService.resolveFor(group),
                     ruleEvaluationId = evaluation.id,
                     decidedAt = decidedAt,
                 ),

@@ -20,12 +20,23 @@ for many before the product is good for one.
 
 ## What the product must become
 
-1. **A configurable reply.** The claim text is currently the constant `PEGO`, enforced by a check
-   constraint in two tables. Each user must be able to set her own wording.
-2. **An availability check.** "I will not take this shift because I already have one that day."
-   This is the `availability` port that `02-Architecture/Module-Map.md` already reserved.
+1. **A configurable reply.** ~~The claim text is the constant `PEGO`, enforced by a check
+   constraint in two tables.~~ **Done (`WP-MVP-001`).** `EP-038`/`EP-039` set the wording, a group
+   overrides it through `EP-010`, and the resolved text is frozen onto the claim at decision time.
+   The default is still `PEGO` and `transport_test_reply` still refuses anything else, so the POC
+   transport proof is untouched.
+2. **An availability check.** ~~"I will not take this shift because I already have one that day."~~
+   **Done (`WP-MVP-001`).** The `availability` port exists, with two sources: what she records
+   through `EP-041` and what this system claimed for her, read live from `shift_claim` so a
+   retraction frees the date. The rule is off unless a rule set configures
+   `agendaConflictPolicy`, and it compares windows rather than dates by default — two shifts on one
+   day that never cross are both hers to take. A third source, her Google Calendar, is elaborated in
+   `12-MVP/Calendar-Integration.md`.
 3. **Multi-tenancy.** Each doctor with her own WhatsApp number, groups, rules, agenda and history.
 4. **A screen.** Everything today is `curl` plus a static admin token.
+5. **Her calendar.** Writing a claimed shift into Google Calendar, and later reading it back as a
+   source of commitments. Deliberately built as a service that speaks calendars rather than shifts,
+   because a second project needs the same thing — see `12-MVP/Calendar-Integration.md`.
 
 ## The architectural centre of gravity
 
@@ -62,7 +73,7 @@ removed.
 
 Inverting the order — claim now, check later, retract if wrong — is only worth its cost for checks
 that are **slow**. The agenda conflict check is a local query measured in milliseconds, so it
-belongs *before* the claim, as an ordinary hard rule. Retraction (`EP-037`) exists for the case that
+belongs *before* the claim, as an ordinary hard rule — which is where `WP-MVP-001` put it. Retraction (`EP-037`) exists for the case that
 is genuinely slow or uncertain: a reading that came from the model.
 
 Retraction is an exception, not a routine step. WhatsApp leaves a visible "message deleted" mark,
@@ -98,11 +109,14 @@ deleting the message does not undo that agreement.
 
 1. **Close `WP-POC-008`.** It needs corpus and time in the group, not code, and it is the project's
    own GO/NO-GO. Building on unmeasured accuracy is building on a guess.
-2. **Configurable message and the agenda conflict rule.** Both are small, both matter to the first
-   real user, and neither requires multi-tenancy.
-3. **A screen for one operator.** Message log, opportunities, one-click review, claims.
+2. ~~**Configurable message and the agenda conflict rule.**~~ **Done — `WP-MVP-001`.** Neither
+   required multi-tenancy, and neither moves a POC verdict: the default wording is unchanged and the
+   new rule does nothing until a rule set asks for it.
+3. **A screen for one operator.** Message log, opportunities, one-click review, claims. Writing a
+   claimed shift to Google Calendar fits here: small, self-contained, immediately felt.
 4. **Multi-tenancy.** Only once the product is good for one person, because this step multiplies
-   whatever exists — including its faults.
+   whatever exists — including its faults. Reading her calendar belongs to this milestone rather
+   than the previous one, because it needs the same per-user credential machinery.
 
 The ordering is the recommendation. Doing 4 before 2 would scale something that has not yet been
 shown to be worth scaling.

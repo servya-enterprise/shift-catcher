@@ -21,8 +21,8 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * The worker of `04-Domain/Claim-Engine.md`: it is the only place that sends `PEGO`. It never
- * re-derives what to send — chat and quote were frozen when the claim was decided — and it retries
+ * The worker of `04-Domain/Claim-Engine.md`: it is the only place that sends the claim. It never
+ * re-derives what to send — chat, quote and wording were frozen when the claim was decided — and it retries
  * only transient failures, on the short budget from
  * `02-Architecture/Transactionality-and-Idempotency.md`.
  */

@@ -1,5 +1,5 @@
 version: 1
-count: 37
+count: 42
 endpoints:
 - id: EP-001
   method: GET
@@ -185,4 +185,29 @@ endpoints:
   method: POST
   path: /claims/{claimId}/retract
   work_package: WP-POC-006
+  status: IMPLEMENTED
+- id: EP-038
+  method: GET
+  path: /settings/claim-message
+  work_package: WP-MVP-001
+  status: IMPLEMENTED
+- id: EP-039
+  method: PUT
+  path: /settings/claim-message
+  work_package: WP-MVP-001
+  status: IMPLEMENTED
+- id: EP-040
+  method: GET
+  path: /availability
+  work_package: WP-MVP-001
+  status: IMPLEMENTED
+- id: EP-041
+  method: POST
+  path: /availability
+  work_package: WP-MVP-001
+  status: IMPLEMENTED
+- id: EP-042
+  method: DELETE
+  path: /availability/{entryId}
+  work_package: WP-MVP-001
   status: IMPLEMENTED

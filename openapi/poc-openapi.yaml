@@ -1771,6 +1771,213 @@ paths:
         required: true
         schema:
           type: string
+  /settings/claim-message:
+    get:
+      operationId: get_settings_claim_message
+      summary: EP-038
+      tags:
+      - WP-MVP-001
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimMessageResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Unexpected error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    put:
+      operationId: put_settings_claim_message
+      summary: EP-039
+      tags:
+      - WP-MVP-001
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimMessageResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Unexpected error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimMessageRequest'
+  /availability:
+    get:
+      operationId: get_availability
+      summary: EP-040
+      tags:
+      - WP-MVP-001
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitmentListResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Unexpected error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+    post:
+      operationId: post_availability
+      summary: EP-041
+      tags:
+      - WP-MVP-001
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityEntryResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Unexpected error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAvailabilityRequest'
+  /availability/{entryId}:
+    delete:
+      operationId: delete_availability_entryId
+      summary: EP-042
+      tags:
+      - WP-MVP-001
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityEntryResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Unexpected error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters:
+      - name: entryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
 components:
   headers:
     CorrelationId:
@@ -2024,6 +2231,127 @@ components:
           type: boolean
         visualConfirmationRequired:
           type: boolean
+    ClaimMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          description: Single line. The default is PEGO, the wording the POC froze.
+          type: string
+          minLength: 1
+          maxLength: 512
+        version:
+          description: Supply it to be told about a concurrent change instead of overwriting one.
+          type: integer
+    ClaimMessageResponse:
+      type: object
+      additionalProperties: false
+      required: [message, version, updatedAt]
+      properties:
+        message:
+          type: string
+        version:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+    CreateAvailabilityRequest:
+      type: object
+      additionalProperties: false
+      required: [shiftDate]
+      properties:
+        shiftDate:
+          type: string
+          format: date
+        startTime:
+          description: Supply both times or neither; half a window cannot be compared.
+          type: string
+        endTime:
+          type: string
+        endsNextDay:
+          type: boolean
+        label:
+          type: string
+          maxLength: 128
+        note:
+          type: string
+    AvailabilityEntryResponse:
+      type: object
+      additionalProperties: false
+      required: [id, shiftDate, endsNextDay, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        shiftDate:
+          type: string
+          format: date
+        startTime:
+          type: string
+          nullable: true
+        endTime:
+          type: string
+          nullable: true
+        endsNextDay:
+          type: boolean
+        label:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Commitment:
+      description: >-
+        Something the operator is already committed to. MANUAL entries are hers to edit; CLAIM
+        entries are read from the claim itself, so retracting a claim removes the commitment.
+      type: object
+      additionalProperties: false
+      required: [source, shiftDate, endsNextDay]
+      properties:
+        source:
+          type: string
+          enum: [MANUAL, CLAIM]
+        reference:
+          type: string
+          nullable: true
+        label:
+          type: string
+          nullable: true
+        shiftDate:
+          type: string
+          format: date
+        startTime:
+          type: string
+          nullable: true
+        endTime:
+          type: string
+          nullable: true
+        endsNextDay:
+          type: boolean
+    CommitmentListResponse:
+      type: object
+      additionalProperties: false
+      required: [from, to, commitments, count]
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        commitments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Commitment'
+        count:
+          type: integer
     GenericObject:
       type: object
       additionalProperties: true

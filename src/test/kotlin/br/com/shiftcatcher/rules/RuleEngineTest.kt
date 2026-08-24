@@ -1,5 +1,7 @@
 package br.com.shiftcatcher.rules
 
+import br.com.shiftcatcher.availability.Commitment
+import br.com.shiftcatcher.availability.CommitmentSource
 import br.com.shiftcatcher.shift.ExtractionMethod
 import br.com.shiftcatcher.shift.OpportunityStatus
 import br.com.shiftcatcher.shift.ShiftOpportunity
@@ -229,6 +231,158 @@ class RuleEngineTest {
         assertFalse(outcome.autoClaimAllowed)
     }
 
+    @Test
+    fun `an unconfigured agenda rule reads nothing into a full diary`() {
+        // The port may well have handed us commitments; without a policy they mean nothing, which
+        // is what keeps rule set v1 evaluating exactly as it did before this rule existed.
+        val outcome = engine.evaluate(context(RuleDefinition(), commitments = listOf(commitment())))
+
+        assertEquals(EvaluationResult.ELIGIBLE, outcome.result)
+        assertTrue(outcome.reasons.none { it.startsWith("AGENDA_") }, "the diary was not consulted at all")
+    }
+
+    @Test
+    fun `an offer that crosses a shift she already has is a conflict`() {
+        // Hers runs 22:00 to 02:00; the offer runs 19:00 to 07:00. They share four hours.
+        val outcome =
+            engine.evaluate(
+                context(
+                    RuleDefinition(agendaConflictPolicy = AgendaConflictPolicy.REJECT),
+                    commitments = listOf(commitment(start = LocalTime.of(22, 0), end = LocalTime.of(2, 0))),
+                ),
+            )
+
+        assertEquals(EvaluationResult.REJECTED, outcome.result)
+        assertTrue(RuleReason.AGENDA_CONFLICT in outcome.reasons)
+    }
+
+    @Test
+    fun `two shifts on one day that never cross are both hers to take`() {
+        // A morning shift and an overnight one on the same date is ordinary in medicine.
+        val outcome =
+            engine.evaluate(
+                context(
+                    RuleDefinition(agendaConflictPolicy = AgendaConflictPolicy.REJECT),
+                    commitments = listOf(commitment(start = LocalTime.of(7, 0), end = LocalTime.of(13, 0))),
+                ),
+            )
+
+        assertEquals(EvaluationResult.ELIGIBLE, outcome.result)
+    }
+
+    @Test
+    fun `same-day mode collides on the date alone`() {
+        val outcome =
+            engine.evaluate(
+                context(
+                    RuleDefinition(
+                        agendaConflictPolicy = AgendaConflictPolicy.REJECT,
+                        agendaConflictMode = AgendaConflictMode.SAME_DAY,
+                    ),
+                    commitments = listOf(commitment(start = LocalTime.of(7, 0), end = LocalTime.of(13, 0))),
+                ),
+            )
+
+        assertEquals(EvaluationResult.REJECTED, outcome.result)
+        assertTrue(RuleReason.AGENDA_CONFLICT in outcome.reasons)
+    }
+
+    @Test
+    fun `a commitment is compared across the midnight it spans`() {
+        // Hers started the day before and runs into this morning; the offer starts at 06:00. The
+        // two share an hour that neither date alone would reveal.
+        val outcome =
+            engine.evaluate(
+                context(
+                    RuleDefinition(agendaConflictPolicy = AgendaConflictPolicy.REJECT),
+                    opportunity(startTime = LocalTime.of(6, 0), endTime = LocalTime.of(12, 0), endsNextDay = false),
+                    commitments =
+                        listOf(
+                            commitment(
+                                date = LocalDate.of(2026, 8, 24),
+                                start = LocalTime.of(19, 0),
+                                end = LocalTime.of(7, 0),
+                                endsNextDay = true,
+                            ),
+                        ),
+                ),
+            )
+
+        assertEquals(EvaluationResult.REJECTED, outcome.result)
+        assertTrue(RuleReason.AGENDA_CONFLICT in outcome.reasons)
+    }
+
+    @Test
+    fun `a shift that ends exactly when the next begins is not a collision`() {
+        val outcome =
+            engine.evaluate(
+                context(
+                    RuleDefinition(agendaConflictPolicy = AgendaConflictPolicy.REJECT),
+                    commitments = listOf(commitment(start = LocalTime.of(7, 0), end = LocalTime.of(19, 0))),
+                ),
+            )
+
+        assertEquals(EvaluationResult.ELIGIBLE, outcome.result, "19:00 to 19:00 is a handover, not an overlap")
+    }
+
+    @Test
+    fun `an unreadable window is uncertainty, not permission`() {
+        // She wrote down a shift without hours. Not knowing whether they cross is not the same as
+        // knowing they do not, so this asks rather than approves.
+        val outcome =
+            engine.evaluate(
+                context(
+                    RuleDefinition(agendaConflictPolicy = AgendaConflictPolicy.REJECT),
+                    commitments = listOf(commitment(start = null, end = null)),
+                ),
+            )
+
+        assertEquals(EvaluationResult.REVIEW_REQUIRED, outcome.result)
+        assertTrue(RuleReason.AGENDA_CONFLICT_UNCERTAIN in outcome.reasons)
+    }
+
+    @Test
+    fun `an undated commitment on a neighbouring day says nothing about this one`() {
+        val outcome =
+            engine.evaluate(
+                context(
+                    RuleDefinition(agendaConflictPolicy = AgendaConflictPolicy.REJECT),
+                    commitments = listOf(commitment(date = LocalDate.of(2026, 8, 24), start = null, end = null)),
+                ),
+            )
+
+        assertEquals(EvaluationResult.ELIGIBLE, outcome.result)
+    }
+
+    @Test
+    fun `the review policy hands the collision over instead of discarding it`() {
+        val outcome =
+            engine.evaluate(
+                context(
+                    RuleDefinition(agendaConflictPolicy = AgendaConflictPolicy.REVIEW),
+                    commitments = listOf(commitment(start = LocalTime.of(22, 0), end = LocalTime.of(2, 0))),
+                ),
+            )
+
+        assertEquals(EvaluationResult.REVIEW_REQUIRED, outcome.result)
+        assertTrue(RuleReason.AGENDA_CONFLICT in outcome.reasons)
+    }
+
+    @Test
+    fun `without a date the agenda rule cannot run at all`() {
+        val outcome =
+            engine.evaluate(
+                context(
+                    RuleDefinition(agendaConflictPolicy = AgendaConflictPolicy.REJECT),
+                    opportunity(shiftDate = null),
+                    commitments = listOf(commitment()),
+                ),
+            )
+
+        assertEquals(EvaluationResult.REVIEW_REQUIRED, outcome.result)
+        assertTrue(RuleReason.REQUIRED_FIELD_MISSING in outcome.reasons)
+    }
+
     private fun context(
         definition: RuleDefinition,
         opportunity: ShiftOpportunity = opportunity(),
@@ -236,6 +390,7 @@ class RuleEngineTest {
         groupAutoClaimEnabled: Boolean = false,
         instanceOperational: Boolean? = true,
         messageTimestamp: Instant = now.minusSeconds(60),
+        commitments: List<Commitment> = emptyList(),
     ): EvaluationContext =
         EvaluationContext(
             opportunity = opportunity,
@@ -246,6 +401,27 @@ class RuleEngineTest {
             instanceOperational = instanceOperational,
             now = now,
             timezone = ZoneId.of("America/Sao_Paulo"),
+            commitments = commitments,
+        )
+
+    /** Something she is already committed to, on the same night as the baseline offer by default. */
+    private fun commitment(
+        date: LocalDate = LocalDate.of(2026, 8, 25),
+        start: LocalTime? = LocalTime.of(19, 0),
+        end: LocalTime? = LocalTime.of(7, 0),
+        // False by default even for the overnight baseline: an end that does not follow its start
+        // already says the shift ran past midnight, and the flag only has to carry the case where
+        // the hours alone cannot say so.
+        endsNextDay: Boolean = false,
+    ): Commitment =
+        Commitment(
+            source = CommitmentSource.MANUAL,
+            reference = UUID.randomUUID().toString(),
+            label = "Santa Casa",
+            shiftDate = date,
+            startTime = start,
+            endTime = end,
+            endsNextDay = endsNextDay,
         )
 
     /** A complete, unambiguous overnight offer on a Tuesday: the baseline every case varies from. */
@@ -254,16 +430,20 @@ class RuleEngineTest {
         confidence: BigDecimal? = BigDecimal.ONE,
         city: String? = "Bauru",
         extractionMethod: ExtractionMethod = ExtractionMethod.DETERMINISTIC,
+        shiftDate: LocalDate? = LocalDate.of(2026, 8, 25),
+        startTime: LocalTime? = LocalTime.of(19, 0),
+        endTime: LocalTime? = LocalTime.of(7, 0),
+        endsNextDay: Boolean = true,
     ): ShiftOpportunity =
         ShiftOpportunity(
             id = UUID.randomUUID(),
             sourceMessageId = UUID.randomUUID(),
             groupId = UUID.randomUUID(),
             status = OpportunityStatus.EVALUATING,
-            shiftDate = LocalDate.of(2026, 8, 25),
-            startTime = LocalTime.of(19, 0),
-            endTime = LocalTime.of(7, 0),
-            endsNextDay = true,
+            shiftDate = shiftDate,
+            startTime = startTime,
+            endTime = endTime,
+            endsNextDay = endsNextDay,
             location = "PS Central",
             city = city,
             amount = BigDecimal("1200.00"),

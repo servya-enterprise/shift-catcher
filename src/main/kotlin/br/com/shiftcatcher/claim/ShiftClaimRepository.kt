@@ -27,6 +27,7 @@ class ShiftClaimRepository(
                 claim.mode.name,
                 claim.chatId,
                 claim.quotedMessageId,
+                claim.message,
                 claim.ruleEvaluationId,
                 Timestamp.from(claim.decidedAt),
             )
@@ -108,7 +109,7 @@ class ShiftClaimRepository(
             insert into shift_claim (
                 opportunity_id, status, mode, chat_id, quoted_message_id, message,
                 rule_evaluation_id, decided_at
-            ) values (?, 'CREATED', ?, ?, ?, 'PEGO', ?, ?)
+            ) values (?, 'CREATED', ?, ?, ?, ?, ?, ?)
             returning id, opportunity_id, status, mode, chat_id, quoted_message_id, message,
                       rule_evaluation_id, provider_message_id, attempt_count, decided_at,
                       claimed_at, failed_at, failure_code, version
@@ -196,6 +197,8 @@ data class ShiftClaimWrite(
     val mode: ClaimMode,
     val chatId: String,
     val quotedMessageId: String,
+    /** Resolved once, at decision time, exactly like the quote target it sits next to. */
+    val message: String,
     val ruleEvaluationId: UUID?,
     val decidedAt: Instant,
 )

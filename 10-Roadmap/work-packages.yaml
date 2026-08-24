@@ -125,3 +125,23 @@ work_packages:
   - 100-message benchmark
   - acceptance checklist
   - decision report
+- id: WP-MVP-001
+  title: Configurable reply & agenda conflict
+  status: DONE
+  depends_on:
+  - WP-POC-007
+  goal: >-
+    Primeiros itens fora do escopo congelado (12-MVP/MVP-Scope.md): texto da resposta configurável e
+    regra dura de conflito de agenda. Não depende do WP-POC-008 e não altera o veredito dele: o
+    padrão continua PEGO e a regra só age quando um rule set a configura.
+  endpoints:
+  - EP-038
+  - EP-039
+  - EP-040
+  - EP-041
+  - EP-042
+  acceptance:
+  - default wording unchanged
+  - sent wording frozen on the claim
+  - conflict rejects only when configured
+  - retraction frees the date

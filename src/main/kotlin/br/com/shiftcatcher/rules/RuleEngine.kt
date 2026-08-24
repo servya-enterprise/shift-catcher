@@ -1,5 +1,6 @@
 package br.com.shiftcatcher.rules
 
+import br.com.shiftcatcher.availability.Commitment
 import br.com.shiftcatcher.shift.ExtractionMethod
 import br.com.shiftcatcher.shift.ShiftOpportunity
 import org.slf4j.LoggerFactory
@@ -7,6 +8,8 @@ import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 
@@ -105,6 +108,34 @@ class RuleEngine {
                 rejected += RuleReason.LOCATION_BLOCKED
             }
         }
+        definition.agendaConflictPolicy?.let { policy ->
+            when (agendaVerdict(opportunity, definition.agendaConflictMode, context.commitments)) {
+                AgendaVerdict.CLEAR -> {
+                    Unit
+                }
+
+                // No date means the rule cannot run at all, which is the same missing-field case
+                // every other configured rule reports.
+                AgendaVerdict.DATE_UNKNOWN -> {
+                    review += RuleReason.REQUIRED_FIELD_MISSING
+                }
+
+                // Something is there but the hours are unreadable on one side. Not knowing whether
+                // they cross is not the same as knowing they do not.
+                AgendaVerdict.UNCERTAIN -> {
+                    review += RuleReason.AGENDA_CONFLICT_UNCERTAIN
+                }
+
+                AgendaVerdict.CONFLICT -> {
+                    when (policy) {
+                        // A collision is a fact about her diary, not a doubt about the offer.
+                        AgendaConflictPolicy.REJECT -> rejected += RuleReason.AGENDA_CONFLICT
+
+                        AgendaConflictPolicy.REVIEW -> review += RuleReason.AGENDA_CONFLICT
+                    }
+                }
+            }
+        }
         definition.maxMessageAgeMinutes?.let { maximum ->
             val age = Duration.between(context.messageTimestamp, context.now).toMinutes()
             if (age > maximum) {
@@ -154,6 +185,57 @@ class RuleEngine {
         )
     }
 
+    private fun agendaVerdict(
+        opportunity: ShiftOpportunity,
+        mode: AgendaConflictMode,
+        commitments: List<Commitment>,
+    ): AgendaVerdict {
+        val date = opportunity.shiftDate ?: return AgendaVerdict.DATE_UNKNOWN
+        if (commitments.isEmpty()) {
+            return AgendaVerdict.CLEAR
+        }
+        if (mode == AgendaConflictMode.SAME_DAY) {
+            // Only the date matters here, so an unknown start hour costs nothing.
+            return if (commitments.any { it.shiftDate == date }) AgendaVerdict.CONFLICT else AgendaVerdict.CLEAR
+        }
+
+        val offered = span(date, opportunity.startTime, opportunity.endTime, opportunity.endsNextDay)
+        var uncertain = false
+        commitments.forEach { commitment ->
+            val held = span(commitment.shiftDate, commitment.startTime, commitment.endTime, commitment.endsNextDay)
+            when {
+                offered != null && held != null -> if (offered overlaps held) return AgendaVerdict.CONFLICT
+
+                // Windows cannot be compared. Only a commitment that shares the date is worth
+                // stopping for: the neighbouring days were read to catch a crossing, and without
+                // hours there is no crossing to catch.
+                commitment.shiftDate == date -> uncertain = true
+
+                else -> Unit
+            }
+        }
+        return if (uncertain) AgendaVerdict.UNCERTAIN else AgendaVerdict.CLEAR
+    }
+
+    /**
+     * Places a shift on the calendar as an absolute interval. A window that does not end after it
+     * starts has run past midnight — the same reading `durationHours` uses — so the end lands on the
+     * following day.
+     */
+    private fun span(
+        date: LocalDate,
+        start: LocalTime?,
+        end: LocalTime?,
+        endsNextDay: Boolean,
+    ): Span? {
+        if (start == null || end == null) {
+            return null
+        }
+        val from = date.atTime(start)
+        val spillover = endsNextDay || !end.isAfter(start)
+        return Span(from, (if (spillover) date.plusDays(1) else date).atTime(end))
+    }
+
     private fun outsideWindow(
         start: LocalTime,
         earliest: LocalTime?,
@@ -194,7 +276,27 @@ data class EvaluationContext(
     val instanceOperational: Boolean?,
     val now: Instant,
     val timezone: ZoneId,
+    /**
+     * What she is already committed to around the offered date, supplied by the `availability`
+     * port. The engine stays pure: it is handed the diary, it does not go and read it.
+     */
+    val commitments: List<Commitment> = emptyList(),
 )
+
+/** Half-open: a shift that ends exactly when the next one begins is not a collision. */
+private data class Span(
+    val from: LocalDateTime,
+    val to: LocalDateTime,
+) {
+    infix fun overlaps(other: Span): Boolean = from < other.to && other.from < to
+}
+
+private enum class AgendaVerdict {
+    CLEAR,
+    CONFLICT,
+    UNCERTAIN,
+    DATE_UNKNOWN,
+}
 
 data class RuleOutcome(
     val result: EvaluationResult,
