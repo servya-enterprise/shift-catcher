@@ -155,15 +155,30 @@ class ReliabilityIntegrationTest(
     }
 
     @Test
-    fun `a stale observation blocks the automatic path`() {
+    fun `a stale observation is refreshed rather than trusted`() {
         anEligibleAutoClaimableOpportunity()
         healthGate.refresh()
         jdbcTemplate.update("update provider_health set observed_at = current_timestamp - interval '1 hour'")
+        val before = instanceHealth.calls.get()
 
         val summary = autoClaimTrigger.runOnce()
 
-        assertEquals("PROVIDER_STATE_STALE", summary.skippedReason, "stale good news is not permission")
+        assertEquals(before + 1, instanceHealth.calls.get(), "stale good news is re-checked, not trusted")
+        assertEquals(1, summary.claimed)
+    }
+
+    @Test
+    fun `a stale observation that cannot be refreshed blocks the automatic path`() {
+        anEligibleAutoClaimableOpportunity()
+        healthGate.refresh()
+        jdbcTemplate.update("update provider_health set observed_at = current_timestamp - interval '1 hour'")
+        instanceHealth.unreachable = true
+
+        val summary = autoClaimTrigger.runOnce()
+
+        assertEquals("PROVIDER_NOT_OPERATIONAL", summary.skippedReason)
         assertEquals(0, countOf("shift_claim"))
+        assertEquals(0, sender.calls.get())
     }
 
     @Test

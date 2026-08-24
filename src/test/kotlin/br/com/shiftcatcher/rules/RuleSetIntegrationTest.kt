@@ -210,16 +210,17 @@ class RuleSetIntegrationTest(
     }
 
     @Test
-    fun `an unreachable provider keeps the offer in review`() {
+    fun `an unreachable provider no longer parks a verdict`() {
         val opportunityId = anOpportunity()
-        // GREEN-API has no api-url in this context, so the state call fails and stays unknown.
         activate(idOf(createRuleSet("""{"definition":{"requireOperationalInstance":true}}""")))
 
+        // Evaluation judges the offer; the claim engine judges the provider with fresher data. An
+        // offer parked in review by a network blink would need a human for something self-healing.
         reevaluate(opportunityId).andExpect {
             status { isOk() }
-            jsonPath("$.result") { value("REVIEW_REQUIRED") }
-            jsonPath("$.reasons") { value(org.hamcrest.Matchers.hasItem("INSTANCE_STATE_UNKNOWN")) }
+            jsonPath("$.result") { value("ELIGIBLE") }
         }
+        assertEquals(0, instanceHealth.calls.get())
     }
 
     @Test
@@ -280,7 +281,7 @@ class RuleSetIntegrationTest(
     }
 
     @Test
-    fun `the provider state is asked once for a whole simulation`() {
+    fun `a simulation never asks the provider`() {
         instanceHealth.state = GreenApiInstanceState.AUTHORIZED
         anOpportunity("batch-1")
         anOpportunity("batch-2")
@@ -293,13 +294,13 @@ class RuleSetIntegrationTest(
             jsonPath("$.eligible") { value(3) }
         }
 
-        // The provider rate-limits getStateInstance: asking per opportunity burns the quota and
-        // makes rows of the same simulation disagree with each other.
-        assertEquals(1, instanceHealth.calls.get())
+        // getStateInstance is rate-limited, and answering "what would this rule set do?" has no
+        // business consuming that quota at all.
+        assertEquals(0, instanceHealth.calls.get())
     }
 
     @Test
-    fun `a rule set that needs no provider state never calls the provider`() {
+    fun `evaluating never calls the provider`() {
         instanceHealth.state = GreenApiInstanceState.AUTHORIZED
         val opportunityId = anOpportunity()
         activate(idOf(createRuleSet("""{"definition":{}}""")))
