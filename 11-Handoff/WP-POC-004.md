@@ -58,6 +58,11 @@ re-analysis, and the sandbox persisting nothing.
 - The filter is deliberately conservative: a terse offer with no keyword, no fee and no time range
   (for example "24h no HC?") scores below the threshold and is ignored. Widening it trades false
   negatives for false positives that would all land in review anyway.
+- **Weekday dates are not parsed.** Only `hoje`, `amanha`, `depois de amanha`, `dd/mm[/yyyy]` and
+  `dia N` resolve; `plantao sabado 19-07` extracts the times but leaves `shiftDate` ambiguous and
+  goes to review. Observed via the EP-034 sandbox on 2026-08-24 and deliberately deferred by the
+  project owner: the message log is accumulating the real corpus first, so the decision to add
+  weekday resolution can be made against how the group actually writes rather than a guess.
 - `DETECTED` and `PARSING` are never persisted because the pipeline is synchronous
   (`AUTODEC-0005`). If detection later moves to a worker, those states become observable and the
   read model should be revisited.
