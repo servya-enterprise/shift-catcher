@@ -100,6 +100,23 @@ class ProviderHealthGate(
         return refresh()
     }
 
+    /**
+     * Refreshes only when the stored observation has served its time. A good answer is trusted for a
+     * minute; a failed one is retried within seconds, because a provider blip must not keep the
+     * automatic path blocked for a whole polling cycle.
+     */
+    fun refreshIfDue(): ProviderHealthObservation {
+        val previous = repository.latest() ?: return refresh()
+        val ttl =
+            if (previous.operational) {
+                properties.claim.healthRefreshSuccessSeconds
+            } else {
+                properties.claim.healthRefreshFailureSeconds
+            }
+        val age = Duration.between(previous.observedAt, clock.instant())
+        return if (age >= Duration.ofSeconds(ttl)) refresh() else previous
+    }
+
     /** Called on a schedule and whenever the cached observation has gone stale. */
     fun refresh(): ProviderHealthObservation {
         val previous = repository.latest()
@@ -146,8 +163,12 @@ class ProviderHealthGate(
 class ProviderHealthMonitor(
     private val gate: ProviderHealthGate,
 ) {
-    @Scheduled(fixedDelayString = "\${shift-catcher.claim.health-interval-ms:60000}")
+    /**
+     * Ticks often but only calls the provider when an observation is actually due, so a healthy
+     * instance is polled once a minute while a failed one recovers within seconds.
+     */
+    @Scheduled(fixedDelayString = "\${shift-catcher.claim.health-interval-ms:5000}")
     fun observe() {
-        gate.refresh()
+        gate.refreshIfDue()
     }
 }

@@ -53,7 +53,7 @@ class MessageDetector(
 
         /** `19-07`, `07 as 19`, `19h as 7h`, `19:00-07:00`, `das 7 as 19`. */
         private val TIME_RANGE =
-            Regex("\\b(\\d{1,2})(?::(\\d{2}))?\\s*h?\\s*(?:-|as|ate)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*h?\\b")
+            Regex("\\b(\\d{1,2})(?::(\\d{2}))?\\s*h?\\s*(?:-|ate|as|a)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*h?\\b")
 
         /** `12h`, `24 horas`, `plantao de 6h`. */
         private val DURATION = Regex("\\b(\\d{1,2})\\s*h(?:oras?)?\\b")

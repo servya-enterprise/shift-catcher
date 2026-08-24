@@ -33,19 +33,24 @@ class AutoClaimTrigger(
         if (!properties.claim.autoClaimEnabled) {
             return AutoClaimSummary(considered = 0, claimed = 0, skippedReason = "AUTO_CLAIM_DISABLED")
         }
-        val health = providerHealth.current()
-        if (health == null || !providerHealth.isFresh(health) || !health.operational) {
-            val reason =
-                when {
-                    health == null -> "PROVIDER_STATE_UNKNOWN"
-                    !providerHealth.isFresh(health) -> "PROVIDER_STATE_STALE"
-                    else -> "PROVIDER_NOT_OPERATIONAL"
-                }
-            audit(reason, health?.state)
-            return AutoClaimSummary(considered = 0, claimed = 0, skippedReason = reason)
+
+        // Work first, health second. Asking the provider on every idle tick burned its rate limit
+        // and wrote an audit row a second for nothing; there is no point knowing whether we may act
+        // when there is nothing to act on.
+        val candidates = opportunityRepository.findAutoClaimable(MAX_PER_PASS)
+        if (candidates.isEmpty()) {
+            return AutoClaimSummary(considered = 0, claimed = 0, skippedReason = null)
         }
 
-        val candidates = opportunityRepository.findAutoClaimable(MAX_PER_PASS)
+        // There is work, so a stale or failed observation is worth refreshing right now rather than
+        // waiting for the next scheduled tick.
+        val health = providerHealth.refreshIfDue()
+        if (!providerHealth.isFresh(health) || !health.operational) {
+            val reason = if (!providerHealth.isFresh(health)) "PROVIDER_STATE_STALE" else "PROVIDER_NOT_OPERATIONAL"
+            audit(reason, health.state)
+            return AutoClaimSummary(considered = candidates.size, claimed = 0, skippedReason = reason)
+        }
+
         var claimed = 0
         candidates.forEach { opportunity ->
             runCatching { claimService.claim(opportunity.id.toString(), ClaimRequest(mode = ClaimMode.AUTO)) }

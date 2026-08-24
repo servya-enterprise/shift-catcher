@@ -179,7 +179,7 @@ class ShiftExtractor(
 
         // `/` is deliberately not a range separator: `19/07` is a date, not 19:00-07:00.
         val TIME_RANGE =
-            Regex("\\b(\\d{1,2})(?::(\\d{2}))?\\s*h?\\s*(?:-|as|ate)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*h?\\b")
+            Regex("\\b(\\d{1,2})(?::(\\d{2}))?\\s*h?\\s*(?:-|ate|as|a)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*h?\\b")
         val CLOCK_TIME = Regex("\\b(?:as|das|apartir das|partir das)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*h?\\b")
         val DURATION_PREFIXED = Regex("\\b(?:de|por|durante)\\s*(\\d{1,2})\\s*h(?:oras?)?\\b")
         val DURATION_SPELLED = Regex("\\b(\\d{1,2})\\s*horas\\b")

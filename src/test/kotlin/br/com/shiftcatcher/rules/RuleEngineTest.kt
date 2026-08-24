@@ -119,9 +119,10 @@ class RuleEngineTest {
         assertEquals(EvaluationResult.REVIEW_REQUIRED, down.result)
         assertTrue(RuleReason.INSTANCE_NOT_OPERATIONAL in down.reasons)
 
-        val unknown = engine.evaluate(context(definition, instanceOperational = null))
-        assertEquals(EvaluationResult.REVIEW_REQUIRED, unknown.result)
-        assertTrue(RuleReason.INSTANCE_STATE_UNKNOWN in unknown.reasons)
+        // Null means the caller did not observe the provider at this stage. Evaluation judges the
+        // offer; blocking here would demand a human for something the claim engine fixes by itself.
+        val notObserved = engine.evaluate(context(definition, instanceOperational = null))
+        assertEquals(EvaluationResult.ELIGIBLE, notObserved.result)
 
         val up = engine.evaluate(context(definition, instanceOperational = true))
         assertEquals(EvaluationResult.ELIGIBLE, up.result)

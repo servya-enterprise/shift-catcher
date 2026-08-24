@@ -21,6 +21,10 @@ data class ShiftCatcherProperties(
         val leaseSeconds: Long = 60,
         /** A provider observation older than this is treated as no answer, which blocks auto-claim. */
         val healthFreshnessSeconds: Long = 90,
+        /** How long a good observation is trusted before it is refreshed. */
+        val healthRefreshSuccessSeconds: Long = 60,
+        /** After a failed observation, retry this soon: a blip must not block claims for a minute. */
+        val healthRefreshFailureSeconds: Long = 5,
         /** Auto-claim stays off until the operator turns it on here *and* in the active rule set. */
         val autoClaimEnabled: Boolean = false,
         /**

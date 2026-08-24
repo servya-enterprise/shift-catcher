@@ -116,7 +116,12 @@ class RuleEngine {
                 // Transient provider trouble must not discard a good offer.
                 false -> review += RuleReason.INSTANCE_NOT_OPERATIONAL
 
-                null -> review += RuleReason.INSTANCE_STATE_UNKNOWN
+                // Null means the caller did not observe the provider at this stage. Evaluation judges
+                // the offer, not the infrastructure: parking an opportunity in review because the
+                // network blinked would demand a human for something that fixes itself. The claim
+                // engine enforces the live precondition, and an offer left ELIGIBLE is claimed as
+                // soon as the provider is back.
+                null -> Unit
 
                 true -> Unit
             }

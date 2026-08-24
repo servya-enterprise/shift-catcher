@@ -167,13 +167,41 @@ class ReliabilityIntegrationTest(
     }
 
     @Test
-    fun `never having observed the provider blocks the automatic path`() {
+    fun `finding work with no observation refreshes on demand instead of waiting a tick`() {
         anEligibleAutoClaimableOpportunity()
+        assertEquals(0, instanceHealth.calls.get(), "nothing observed yet")
 
         val summary = autoClaimTrigger.runOnce()
 
-        assertEquals("PROVIDER_STATE_UNKNOWN", summary.skippedReason)
-        assertEquals(0, countOf("shift_claim"))
+        assertEquals(1, instanceHealth.calls.get(), "the trigger asked because there was work")
+        assertEquals(1, summary.claimed)
+    }
+
+    @Test
+    fun `an idle pass never touches the provider or the audit trail`() {
+        // The old order asked on every tick, burning the provider's rate limit and writing an audit
+        // row a second for nothing.
+        val summary = autoClaimTrigger.runOnce()
+
+        assertEquals(0, summary.considered)
+        assertEquals(null, summary.skippedReason)
+        assertEquals(0, instanceHealth.calls.get())
+        assertEquals(0, countOf("audit_event"))
+    }
+
+    @Test
+    fun `a failed observation is retried within seconds instead of a whole cycle`() {
+        instanceHealth.unreachable = true
+        healthGate.refresh()
+        val afterFailure = instanceHealth.calls.get()
+
+        // A good observation is trusted for a minute; a failed one is due again almost immediately.
+        jdbcTemplate.update("update provider_health set observed_at = current_timestamp - interval '6 seconds'")
+        instanceHealth.unreachable = false
+        val recovered = healthGate.refreshIfDue()
+
+        assertEquals(afterFailure + 1, instanceHealth.calls.get())
+        assertTrue(recovered.operational)
     }
 
     @Test

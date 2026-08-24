@@ -3,7 +3,6 @@ package br.com.shiftcatcher.rules
 import br.com.shiftcatcher.foundation.config.ShiftCatcherProperties
 import br.com.shiftcatcher.foundation.http.ApiProblemException
 import br.com.shiftcatcher.group.AllowedGroupRepository
-import br.com.shiftcatcher.integration.greenapi.WhatsAppInstanceHealth
 import br.com.shiftcatcher.messaging.IncomingMessageRepository
 import br.com.shiftcatcher.shift.OpportunityStatus
 import br.com.shiftcatcher.shift.ShiftOpportunity
@@ -28,7 +27,6 @@ class OpportunityEvaluationService(
     private val opportunityRepository: ShiftOpportunityRepository,
     private val groupRepository: AllowedGroupRepository,
     private val messageRepository: IncomingMessageRepository,
-    private val instanceHealth: WhatsAppInstanceHealth,
     private val properties: ShiftCatcherProperties,
     private val clock: Clock = Clock.systemUTC(),
 ) {
@@ -48,9 +46,7 @@ class OpportunityEvaluationService(
                     autoClaimAllowed = false,
                 )
             } else {
-                ruleEngine.evaluate(
-                    contextFor(opportunity, active, evaluatedAt, instanceOperationalFor(active)),
-                )
+                ruleEngine.evaluate(contextFor(opportunity, active, evaluatedAt))
             }
 
         val record =
@@ -105,13 +101,9 @@ class OpportunityEvaluationService(
                 ?.map { id -> load(id) }
                 ?: opportunityRepository.findRecent(MAX_SIMULATION_SIZE)
 
-        // Resolved once for the whole batch: the provider rate-limits `getStateInstance`, so asking
-        // per opportunity both burns the quota and makes the answer differ across rows of the same
-        // simulation.
-        val instanceOperational = instanceOperationalFor(ruleSet)
         val results =
             opportunities.map { opportunity ->
-                val outcome = ruleEngine.evaluate(contextFor(opportunity, ruleSet, now, instanceOperational))
+                val outcome = ruleEngine.evaluate(contextFor(opportunity, ruleSet, now))
                 EvaluationResponse(
                     opportunityId = opportunity.id.toString(),
                     // The stored status is reported unchanged: a simulation moves nothing.
@@ -139,7 +131,6 @@ class OpportunityEvaluationService(
         opportunity: ShiftOpportunity,
         ruleSet: ActiveRuleSet,
         now: Instant,
-        instanceOperational: Boolean?,
     ): EvaluationContext {
         val group = opportunity.groupId?.let { groupRepository.findById(it) }
         val message = messageRepository.findById(opportunity.sourceMessageId)
@@ -149,22 +140,12 @@ class OpportunityEvaluationService(
             groupEnabled = group?.enabled ?: false,
             groupAutoClaimEnabled = group?.autoClaimEnabled ?: false,
             messageTimestamp = message?.providerTimestamp ?: opportunity.detectedAt,
-            instanceOperational = instanceOperational,
+            // Never observed here: evaluation judges the offer, the claim engine judges the provider.
+            instanceOperational = null,
             now = now,
             timezone = properties.detection.timezone,
         )
     }
-
-    /**
-     * Only asked for when a rule actually depends on it. Null means "could not tell", which the
-     * engine treats as a reason to review, never to approve.
-     */
-    private fun instanceOperationalFor(ruleSet: ActiveRuleSet): Boolean? =
-        if (ruleSet.definition.requireOperationalInstance) {
-            runCatching { instanceHealth.getState().operational }.getOrNull()
-        } else {
-            null
-        }
 
     private fun requireOpenForEvaluation(opportunity: ShiftOpportunity) {
         val settled =
