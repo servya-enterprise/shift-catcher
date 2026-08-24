@@ -79,6 +79,21 @@ class ShiftOpportunityRepository(
                 expectedVersion,
             ).firstOrNull()
 
+    /**
+     * Status-only transition used by the rule engine, which decides eligibility without touching the
+     * extracted fields it judged.
+     */
+    @Transactional
+    fun updateStatus(
+        id: UUID,
+        expectedVersion: Int,
+        status: OpportunityStatus,
+        resolutionReason: String?,
+    ): ShiftOpportunity? =
+        jdbcTemplate
+            .query(UPDATE_STATUS_SQL, ROW_MAPPER, status.name, resolutionReason, id, expectedVersion)
+            .firstOrNull()
+
     fun findById(id: UUID): ShiftOpportunity? = jdbcTemplate.query("$SELECT_SQL where id = ?", ROW_MAPPER, id).firstOrNull()
 
     fun findBySourceMessageId(sourceMessageId: UUID): ShiftOpportunity? =
@@ -150,6 +165,21 @@ class ShiftOpportunityRepository(
                    ambiguous_fields = ?,
                    resolution_reason = ?,
                    review_note = ?,
+                   version = version + 1,
+                   updated_at = current_timestamp
+             where id = ?
+               and version = ?
+            returning id, source_message_id, group_id, status, shift_date, start_time, end_time,
+                      ends_next_day, location, city, amount, currency, specialty, notes,
+                      extraction_method, confidence, ambiguous_fields, resolution_reason,
+                      review_note, version, detected_at, extraction_completed_at
+            """.trimIndent()
+
+        val UPDATE_STATUS_SQL =
+            """
+            update shift_opportunity
+               set status = ?,
+                   resolution_reason = ?,
                    version = version + 1,
                    updated_at = current_timestamp
              where id = ?

@@ -52,7 +52,7 @@ work_packages:
   - fast webhook
 - id: WP-POC-004
   title: Detection & extraction
-  status: READY
+  status: DONE
   depends_on:
   - WP-POC-003
   goal: Candidate filter, deterministic extraction e AI fallback.
@@ -68,7 +68,7 @@ work_packages:
   - ambiguous review
 - id: WP-POC-005
   title: Rule Engine
-  status: PLANNED
+  status: READY
   depends_on:
   - WP-POC-004
   goal: Eligibility e versioned rules.
