@@ -27,7 +27,14 @@ def validate_checksums(errors: list[str]) -> None:
         if not target.is_file():
             fail(errors, f"checksum target missing: {relative}")
             continue
-        actual = hashlib.sha256(target.read_bytes()).hexdigest()
+        content = target.read_bytes()
+        # `.gitattributes` normalises these files to LF, so a CRLF working copy hashes to something
+        # CI can never reproduce: the checksum passes locally and fails the moment it is pushed.
+        # Editors on Windows reintroduce CRLF silently, so the guard is here rather than in a habit.
+        if b"\r\n" in content:
+            fail(errors, f"CRLF line endings (the repository stores LF): {relative}")
+            continue
+        actual = hashlib.sha256(content).hexdigest()
         if actual != expected.lower():
             fail(errors, f"checksum mismatch: {relative}")
 
