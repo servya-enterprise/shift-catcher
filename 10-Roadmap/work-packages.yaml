@@ -95,6 +95,7 @@ work_packages:
   - EP-024
   - EP-025
   - EP-026
+  - EP-037
   acceptance:
   - one concurrent winner
   - one logical send

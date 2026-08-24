@@ -165,7 +165,7 @@ def main() -> int:
             print(f"- {error}")
         return 1
 
-    print("spec_validation=PASS checksums=55 work_packages=8 endpoints=36")
+    print("spec_validation=PASS checksums=55 work_packages=8 endpoints=37")
     return 0
 
 

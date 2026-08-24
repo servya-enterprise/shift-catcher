@@ -10,6 +10,20 @@ interface WhatsAppMessageSender {
     fun sendQuotedMessage(command: SendQuotedMessage): ProviderSendReceipt
 }
 
+/**
+ * Deleting is a separate capability from sending: `03-Integrations/Green-API-Contract.md` only ever
+ * needed to send, and a retraction is a compensating action rather than part of the happy path.
+ * The provider deletes for everyone only within 60 hours of the original send.
+ */
+interface WhatsAppMessageRetractor {
+    fun deleteMessage(command: DeleteMessage)
+}
+
+data class DeleteMessage(
+    val chatId: String,
+    val providerMessageId: String,
+)
+
 data class SendQuotedMessage(
     val chatId: String,
     val message: String,

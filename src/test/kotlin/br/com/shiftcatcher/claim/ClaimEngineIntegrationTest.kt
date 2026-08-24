@@ -365,6 +365,85 @@ class ClaimEngineIntegrationTest(
     }
 
     @Test
+    fun `retracting deletes the sent message and frees the opportunity`() {
+        val opportunityId = anEligibleOpportunity()
+        postClaim(opportunityId).andExpect { status { isOk() } }
+        processor.processDueEvents()
+        val claimId = jdbcTemplate.queryForObject("select id from shift_claim", UUID::class.java).toString()
+
+        mockMvc
+            .post("/api/v1/claims/$claimId/retract") {
+                adminBearer()
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"reason":"leitura errada"}"""
+            }.andExpect {
+                status { isOk() }
+                jsonPath("$.status") { value("RETRACTED") }
+            }
+
+        val deleted = sender.deletes.single()
+        assertEquals(GROUP_CHAT_ID, deleted.chatId)
+        assertEquals("provider-out-1", deleted.providerMessageId, "the message we actually sent")
+        assertEquals("REJECTED", opportunityStatus())
+        assertEquals(
+            "CLAIM_RETRACTED",
+            jdbcTemplate.queryForObject("select resolution_reason from shift_opportunity", String::class.java),
+        )
+    }
+
+    @Test
+    fun `retracting twice is harmless`() {
+        val opportunityId = anEligibleOpportunity()
+        postClaim(opportunityId).andExpect { status { isOk() } }
+        processor.processDueEvents()
+        val claimId = jdbcTemplate.queryForObject("select id from shift_claim", UUID::class.java).toString()
+
+        mockMvc.post("/api/v1/claims/$claimId/retract") { adminBearer() }.andExpect { status { isOk() } }
+        mockMvc.post("/api/v1/claims/$claimId/retract") { adminBearer() }.andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("RETRACTED") }
+        }
+
+        assertEquals(1, sender.deletes.size, "the provider is not asked twice")
+    }
+
+    @Test
+    fun `a refused deletion leaves the claim standing rather than pretending`() {
+        val opportunityId = anEligibleOpportunity()
+        postClaim(opportunityId).andExpect { status { isOk() } }
+        processor.processDueEvents()
+        val claimId = jdbcTemplate.queryForObject("select id from shift_claim", UUID::class.java).toString()
+        sender.deleteFailure =
+            GreenApiTransportException(GreenApiFailureKind.CLIENT_ERROR, "too old to delete")
+
+        mockMvc.post("/api/v1/claims/$claimId/retract") { adminBearer() }.andExpect {
+            status { isBadGateway() }
+            jsonPath("$.code") { value("GREEN_API_UNAVAILABLE") }
+        }
+
+        // The message is still in the group, so the claim must still say CLAIMED.
+        assertEquals("CLAIMED", claimStatus())
+        assertEquals(
+            "GREEN_API_CLIENT_ERROR",
+            jdbcTemplate.queryForObject("select retraction_failure_code from shift_claim", String::class.java),
+        )
+    }
+
+    @Test
+    fun `only a sent claim can be retracted`() {
+        val opportunityId = anEligibleOpportunity()
+        postClaim(opportunityId).andExpect { status { isOk() } }
+        val claimId = jdbcTemplate.queryForObject("select id from shift_claim", UUID::class.java).toString()
+
+        // Nothing has been sent yet, so there is nothing to take back.
+        mockMvc.post("/api/v1/claims/$claimId/retract") { adminBearer() }.andExpect {
+            status { isConflict() }
+            jsonPath("$.code") { value("CONFLICT") }
+        }
+        assertEquals(0, sender.deletes.size)
+    }
+
+    @Test
     fun `an unknown opportunity cannot be claimed`() {
         postClaim(UUID.randomUUID().toString()).andExpect {
             status { isNotFound() }

@@ -29,7 +29,7 @@
   "04-Domain/State-Machines.md": "be1f760aaadca0ad4280651e905ea84011d634038cdecdf605b8a3fbe4d84055",
   "05-Data/Audit-and-Observability.md": "e59a18e2f128f3700057719e91f0174ef71e6ed44a986aaa774fe0924e68cb34",
   "05-Data/Data-Model.md": "b4029d4095cda6b459db12fc597b35168225fa4cdb10b79a6d0e7e1c5c08a52c",
-  "06-API/Endpoint-Catalog.md": "59d6fbf43b4c081821de2d04b60d6ba4470dc308ccf7262dab12d672e8766085",
+  "06-API/Endpoint-Catalog.md": "123faa676cc8673f015cbef202213bbdfc2909a15153c84f9fb4405792b195f6",
   "06-API/OpenAPI-Conventions.md": "3f2b0c68a7f380139f7b932b6fc3fcaccc959a931919b8c4635ceea4271971a9",
   "07-AI/AI-Parser-Contract.md": "b27886f344b6a21041ea456ce8140db3790a8adbfd709bb192a91a9e2daa368b",
   "07-AI/Fallback-Policy.md": "c402d9913deb1fb2b9db8fa7dbbf0544716c7394314580c9f631a2df85e47cd8",
@@ -44,14 +44,14 @@
   "09-Decisions/DEC-005-Fail-Safe-Auto-Claim.md": "08645790b910fc4f524c32f176cbdd3190ebb33adb52e87dea467d2b1b5b5768",
   "09-Decisions/DEC-006-Transactional-Outbox.md": "587a6e005dee7c0dbe9a34f819dd64780b8383e38ba9930b21e91d9a85f1294b",
   "10-Roadmap/Roadmap.md": "53e1b89828a2f4e74f9a2e5992ffeb1d811a4f1645f9199065b03aa9d8a28e69",
-  "10-Roadmap/endpoint-coverage.yaml": "e9652cb71e4b38b0daf433d82b0c4f179379a0221fc6d415f0fc664cead4d934",
-  "10-Roadmap/work-packages.yaml": "e2ce493493679b532a8aea02eb69e0879f434141e1711721f432c38add721abb",
+  "10-Roadmap/endpoint-coverage.yaml": "d54ee5c4a36bb5084f8b02c6eeb40ddce8ab93850dd06c98d0fefaef881e49ba",
+  "10-Roadmap/work-packages.yaml": "cfb07515ac83ec3a6265756860f5f0059309aada8b344695e47b91b71c2950f0",
   "11-Handoff/Bootstrap-Prompt.md": "d193785466d1402d21ae2cd5c489ac6d369a886a1f3553ca44026bfd5de93d6a",
   "11-Handoff/Clara-Care-Reference-Policy.md": "96c322bee4aafc1928e4346223f664cefa794ad994a8488b6e45654825bc5b3a",
   "11-Handoff/POC-Setup-Checklist.md": "dc595a15f3525dbe370c6a5204a022f7ddc436d4a8d4ba283f773304a2998476",
   "AGENTS.md": "32e3b9707525c18d7c45cc427f827b631956ed517538d0a0ca5fe32bb839da54",
-  "MANIFEST.json": "26c23039aaec0cad453a69b5ea721d3c3672211e6e7ee88885d7aead7e591573",
+  "MANIFEST.json": "5bd7349b58384bee346ac3417c3532363732f8def5ae70df2c97bb3f06751ef6",
   "PLANS.md": "e00f17c82e2f7fa5732d497a9d2d403a96ef951f226b7d79123fe486bb518a82",
   "README.md": "50bdbadb6839bdabe8bb80e804f5aa9df12193fd0ba01cbedfa680d44f7baf94",
-  "openapi/poc-openapi.yaml": "c6d86f5690eac74683f69e5359652acc78131032b70aa4e7de5319a1812e0cca"
+  "openapi/poc-openapi.yaml": "0567693c2b0c8cdb4b304dbee83fbc4b41b1af06ac0af7898b6bbfae2f2c353b"
 }

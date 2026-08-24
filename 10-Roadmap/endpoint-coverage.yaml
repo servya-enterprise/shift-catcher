@@ -1,5 +1,5 @@
 version: 1
-count: 36
+count: 37
 endpoints:
 - id: EP-001
   method: GET
@@ -181,3 +181,8 @@ endpoints:
   path: /poc/benchmark/{benchmarkId}
   work_package: WP-POC-008
   status: SPECIFIED
+- id: EP-037
+  method: POST
+  path: /claims/{claimId}/retract
+  work_package: WP-POC-006
+  status: IMPLEMENTED

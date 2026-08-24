@@ -40,7 +40,8 @@ Base: `/api/v1`
 | EP-034 | POST | `/poc/detect` | Detector/extractor sandbox. |
 | EP-035 | POST | `/poc/benchmark/start` | Inicia benchmark. |
 | EP-036 | GET | `/poc/benchmark/{benchmarkId}` | Resultado benchmark. |
+| EP-037 | POST | `/claims/{claimId}/retract` | Retrata claim e apaga o PEGO enviado. |
 
-**Total baseline: 36 operações HTTP.**
+**Total baseline: 37 operações HTTP.**
 
 Endpoints admin da POC podem ficar restritos a localhost/VPN. Se forem expostos publicamente, adicionar auth antes do deploy.

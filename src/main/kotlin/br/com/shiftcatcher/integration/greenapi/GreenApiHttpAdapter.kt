@@ -16,7 +16,8 @@ class GreenApiHttpAdapter(
     private val properties: ShiftCatcherProperties,
     private val clock: Clock = Clock.systemUTC(),
 ) : WhatsAppInstanceHealth,
-    WhatsAppMessageSender {
+    WhatsAppMessageSender,
+    WhatsAppMessageRetractor {
     private val restClient: RestClient by lazy {
         val requestFactory =
             SimpleClientHttpRequestFactory().apply {
@@ -80,6 +81,19 @@ class GreenApiHttpAdapter(
         return ProviderSendReceipt(providerMessageId = providerMessageId, acceptedAt = clock.instant())
     }
 
+    override fun deleteMessage(command: DeleteMessage) {
+        execute("delete") {
+            restClient
+                .post()
+                .uri(endpoint("deleteMessage"))
+                .body(DeleteRequest(chatId = command.chatId, idMessage = command.providerMessageId))
+                .retrieve()
+                // The provider answers a successful delete with an empty body, so there is nothing
+                // to read: reaching this point without an exception is the whole result.
+                .toBodilessEntity()
+        }
+    }
+
     private fun endpoint(method: String): URI {
         val config = properties.greenApi
         if (!config.isProviderConfigured()) {
@@ -139,6 +153,11 @@ class GreenApiHttpAdapter(
         val chatId: String,
         val message: String,
         val quotedMessageId: String,
+    )
+
+    private data class DeleteRequest(
+        val chatId: String,
+        val idMessage: String,
     )
 
     private data class SendPayload(

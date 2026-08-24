@@ -68,6 +68,24 @@ class ShiftClaimRepository(
             ).firstOrNull()
 
     @Transactional
+    fun recordRetraction(
+        id: UUID,
+        at: java.time.Instant,
+        reason: String?,
+        failureCode: String?,
+    ): ShiftClaim? =
+        jdbcTemplate
+            .query(
+                RETRACTION_SQL,
+                ROW_MAPPER,
+                if (failureCode == null) ClaimStatus.RETRACTED.name else ClaimStatus.CLAIMED.name,
+                Timestamp.from(at),
+                reason,
+                failureCode,
+                id,
+            ).firstOrNull()
+
+    @Transactional
     fun incrementAttemptCount(id: UUID): Int =
         jdbcTemplate.queryForObject(
             "update shift_claim set attempt_count = attempt_count + 1, updated_at = current_timestamp " +
@@ -91,6 +109,22 @@ class ShiftClaimRepository(
                 opportunity_id, status, mode, chat_id, quoted_message_id, message,
                 rule_evaluation_id, decided_at
             ) values (?, 'CREATED', ?, ?, ?, 'PEGO', ?, ?)
+            returning id, opportunity_id, status, mode, chat_id, quoted_message_id, message,
+                      rule_evaluation_id, provider_message_id, attempt_count, decided_at,
+                      claimed_at, failed_at, failure_code, version
+            """.trimIndent()
+
+        val RETRACTION_SQL =
+            """
+            update shift_claim
+               set status = ?,
+                   retracted_at = ?,
+                   retraction_reason = ?,
+                   retraction_failure_code = ?,
+                   version = version + 1,
+                   updated_at = current_timestamp
+             where id = ?
+               and status in ('CLAIMED', 'RETRACTING')
             returning id, opportunity_id, status, mode, chat_id, quoted_message_id, message,
                       rule_evaluation_id, provider_message_id, attempt_count, decided_at,
                       claimed_at, failed_at, failure_code, version
@@ -144,6 +178,12 @@ enum class ClaimStatus {
     PROVIDER_ACCEPTED,
     CLAIMED,
     FAILED,
+    RETRACTING,
+    RETRACTED,
+    ;
+
+    /** A sent message is the only thing that can be taken back. */
+    fun isRetractable(): Boolean = this == CLAIMED
 }
 
 enum class ClaimMode {

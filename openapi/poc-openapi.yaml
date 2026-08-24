@@ -1237,6 +1237,57 @@ paths:
         required: true
         schema:
           type: string
+  /claims/{claimId}/retract:
+    post:
+      operationId: post_claims_claimId_retract
+      summary: EP-037
+      tags:
+      - WP-POC-006
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Unexpected error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericObject'
+      parameters:
+      - name: claimId
+        in: path
+        required: true
+        schema:
+          type: string
   /rule-sets:
     get:
       operationId: get_rule_sets

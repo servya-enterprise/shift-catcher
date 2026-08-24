@@ -24,6 +24,13 @@ class ClaimController(
     fun retry(
         @PathVariable claimId: String,
     ): ClaimResponse = service.retry(claimId)
+
+    /** `EP-037`: takes back a PEGO that should not have been sent. */
+    @PostMapping("/{claimId}/retract")
+    fun retract(
+        @PathVariable claimId: String,
+        @RequestBody(required = false) request: RetractClaimRequest?,
+    ): ClaimResponse = service.retract(claimId, request)
 }
 
 /** `EP-023` sits on the opportunity path but is owned by the claim module. */

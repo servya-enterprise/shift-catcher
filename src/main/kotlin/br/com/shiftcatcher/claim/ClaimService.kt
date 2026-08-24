@@ -2,7 +2,11 @@ package br.com.shiftcatcher.claim
 
 import br.com.shiftcatcher.foundation.http.ApiProblemException
 import br.com.shiftcatcher.group.AllowedGroupRepository
+import br.com.shiftcatcher.integration.greenapi.DeleteMessage
+import br.com.shiftcatcher.integration.greenapi.WhatsAppMessageRetractor
 import br.com.shiftcatcher.messaging.IncomingMessageRepository
+import br.com.shiftcatcher.observability.AuditEventWrite
+import br.com.shiftcatcher.observability.AuditRepository
 import br.com.shiftcatcher.reliability.OutboxRepository
 import br.com.shiftcatcher.reliability.ProviderHealthGate
 import br.com.shiftcatcher.rules.EvaluationResult
@@ -33,6 +37,8 @@ class ClaimService(
     private val groupRepository: AllowedGroupRepository,
     private val messageRepository: IncomingMessageRepository,
     private val providerHealth: ProviderHealthGate,
+    private val messageRetractor: WhatsAppMessageRetractor,
+    private val auditRepository: AuditRepository,
     private val objectMapper: ObjectMapper,
     private val clock: Clock = Clock.systemUTC(),
 ) {
@@ -184,6 +190,98 @@ class ClaimService(
         return loadClaim(claimId).toResponse(attemptRepository.findByClaimId(claim.id))
     }
 
+    /**
+     * Compensating action for a claim that should not have been sent. It is deliberately an
+     * exception rather than a routine step: WhatsApp leaves a visible "message deleted" mark, and
+     * taking a shift back has a social cost inside a small group of colleagues.
+     *
+     * Deleting is also cosmetic, not transactional. If the person who posted the offer already read
+     * the PEGO and assigned the shift, removing the message does not undo that agreement - which is
+     * why the reason is recorded and the operator, not a heuristic, decides.
+     */
+    @Transactional
+    fun retract(
+        claimId: String,
+        request: RetractClaimRequest?,
+    ): ClaimResponse {
+        val claim = loadClaim(claimId)
+        if (claim.status == ClaimStatus.RETRACTED) {
+            return claim.toResponse(attemptRepository.findByClaimId(claim.id))
+        }
+        if (!claim.status.isRetractable()) {
+            throw ApiProblemException(
+                status = HttpStatus.CONFLICT,
+                code = "CONFLICT",
+                title = "Claim is not retractable",
+                message = "Only a CLAIMED claim can be retracted; this one is ${claim.status}",
+            )
+        }
+        val providerMessageId =
+            claim.providerMessageId
+                ?: throw ApiProblemException(
+                    status = HttpStatus.CONFLICT,
+                    code = "CONFLICT",
+                    title = "Claim has nothing to retract",
+                    message = "This claim never reached the provider, so there is no message to delete",
+                )
+
+        val now = clock.instant()
+        val failureCode =
+            runCatching {
+                messageRetractor.deleteMessage(
+                    DeleteMessage(chatId = claim.chatId, providerMessageId = providerMessageId),
+                )
+            }.fold(onSuccess = { null }, onFailure = { failure -> failure.retractionCode() })
+
+        val updated =
+            claimRepository.recordRetraction(
+                id = claim.id,
+                at = now,
+                reason = request?.reason?.take(64),
+                failureCode = failureCode,
+            ) ?: throw ApiProblemException(
+                status = HttpStatus.CONFLICT,
+                code = "CONFLICT",
+                title = "Claim changed while it was being retracted",
+                message = "Reload the claim and retry",
+            )
+        auditRepository.record(
+            AuditEventWrite(
+                aggregateType = "SHIFT_CLAIM",
+                aggregateId = claim.id,
+                eventType = if (failureCode == null) "CLAIM_RETRACTED" else "CLAIM_RETRACTION_FAILED",
+                detail = request?.reason?.take(512) ?: failureCode,
+                occurredAt = now,
+            ),
+        )
+        if (failureCode != null) {
+            // The claim stays CLAIMED: the message is still in the group, and pretending otherwise
+            // would be worse than reporting the failure.
+            throw ApiProblemException(
+                status = HttpStatus.BAD_GATEWAY,
+                code = "GREEN_API_UNAVAILABLE",
+                title = "Message could not be deleted",
+                message = "The provider refused to delete the message; it is still in the group",
+            )
+        }
+        // The opportunity goes back to being explicitly not taken.
+        opportunityRepository.findById(claim.opportunityId)?.let { opportunity ->
+            opportunityRepository.updateStatus(
+                id = opportunity.id,
+                expectedVersion = opportunity.version,
+                status = OpportunityStatus.REJECTED,
+                resolutionReason = "CLAIM_RETRACTED",
+            )
+        }
+        return updated.toResponse(attemptRepository.findByClaimId(claim.id))
+    }
+
+    private fun Throwable.retractionCode(): String =
+        when (this) {
+            is br.com.shiftcatcher.integration.greenapi.GreenApiTransportException -> "GREEN_API_${kind.name}"
+            else -> "GREEN_API_UNAVAILABLE"
+        }
+
     private fun notClaimable(detail: String): ApiProblemException =
         ApiProblemException(
             status = HttpStatus.CONFLICT,
@@ -263,6 +361,10 @@ data class SendClaimPayload(
 
 data class ClaimRequest(
     val mode: ClaimMode? = null,
+)
+
+data class RetractClaimRequest(
+    val reason: String? = null,
 )
 
 data class ClaimAttemptResponse(
