@@ -1,14 +1,18 @@
 package br.com.shiftcatcher.rules
 
 import br.com.shiftcatcher.PostgresTestConfiguration
+import br.com.shiftcatcher.integration.greenapi.GreenApiInstanceState
 import com.jayway.jsonpath.JsonPath
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.Primary
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.web.servlet.MockHttpServletRequestDsl
@@ -20,7 +24,7 @@ import org.springframework.test.web.servlet.post
 import java.util.UUID
 import kotlin.test.assertEquals
 
-@Import(PostgresTestConfiguration::class)
+@Import(PostgresTestConfiguration::class, RuleSetIntegrationTest.FakeProviderConfiguration::class)
 @SpringBootTest(
     webEnvironment = WebEnvironment.MOCK,
     properties = [
@@ -35,9 +39,18 @@ import kotlin.test.assertEquals
 class RuleSetIntegrationTest(
     @Autowired private val mockMvc: MockMvc,
     @Autowired private val jdbcTemplate: JdbcTemplate,
+    @Autowired private val instanceHealth: FakeInstanceHealth,
 ) {
+    @TestConfiguration
+    class FakeProviderConfiguration {
+        @Bean
+        @Primary
+        fun fakeInstanceHealth(): FakeInstanceHealth = FakeInstanceHealth()
+    }
+
     @BeforeEach
     fun reset() {
+        instanceHealth.reset()
         jdbcTemplate.update("delete from rule_evaluation")
         jdbcTemplate.update("delete from rule_set")
         jdbcTemplate.update("delete from shift_opportunity")
@@ -267,6 +280,36 @@ class RuleSetIntegrationTest(
     }
 
     @Test
+    fun `the provider state is asked once for a whole simulation`() {
+        instanceHealth.state = GreenApiInstanceState.AUTHORIZED
+        anOpportunity("batch-1")
+        anOpportunity("batch-2")
+        anOpportunity("batch-3")
+        val draft = idOf(createRuleSet("""{"definition":{"requireOperationalInstance":true}}"""))
+
+        mockMvc.post("/api/v1/rule-sets/$draft/simulate") { adminBearer() }.andExpect {
+            status { isOk() }
+            jsonPath("$.evaluated") { value(3) }
+            jsonPath("$.eligible") { value(3) }
+        }
+
+        // The provider rate-limits getStateInstance: asking per opportunity burns the quota and
+        // makes rows of the same simulation disagree with each other.
+        assertEquals(1, instanceHealth.calls.get())
+    }
+
+    @Test
+    fun `a rule set that needs no provider state never calls the provider`() {
+        instanceHealth.state = GreenApiInstanceState.AUTHORIZED
+        val opportunityId = anOpportunity()
+        activate(idOf(createRuleSet("""{"definition":{}}""")))
+
+        reevaluate(opportunityId).andExpect { status { isOk() } }
+
+        assertEquals(0, instanceHealth.calls.get())
+    }
+
+    @Test
     fun `a simulation can target specific opportunities`() {
         val opportunityId = anOpportunity()
         val draft = idOf(createRuleSet("""{"definition":{}}"""))
@@ -284,13 +327,12 @@ class RuleSetIntegrationTest(
     }
 
     /** Registers the group and ingests a complete offer, leaving one opportunity in EVALUATING. */
-    private fun anOpportunity(): String {
-        mockMvc
-            .post("/api/v1/groups") {
-                adminBearer()
-                contentType = MediaType.APPLICATION_JSON
-                content = """{"providerChatId":"$GROUP_CHAT_ID","displayName":"Plantoes"}"""
-            }.andExpect { status { isOk() } }
+    private fun anOpportunity(providerMessageId: String = "rules-message-1"): String {
+        mockMvc.post("/api/v1/groups") {
+            adminBearer()
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"providerChatId":"$GROUP_CHAT_ID","displayName":"Plantoes"}"""
+        }
         mockMvc
             .post("/api/v1/webhooks/green-api") {
                 header("Authorization", "Bearer test-webhook-token")
@@ -301,7 +343,7 @@ class RuleSetIntegrationTest(
                       "typeWebhook": "incomingMessageReceived",
                       "instanceData": {"idInstance": 123456},
                       "timestamp": 1787608800,
-                      "idMessage": "rules-message-1",
+                      "idMessage": "$providerMessageId",
                       "senderData": {
                         "chatId": "$GROUP_CHAT_ID",
                         "chatName": "Plantoes",
@@ -315,7 +357,17 @@ class RuleSetIntegrationTest(
                     }
                     """.trimIndent()
             }.andExpect { status { isOk() } }
-        return jdbcTemplate.queryForObject("select id from shift_opportunity", UUID::class.java).toString()
+        return jdbcTemplate
+            .queryForObject(
+                """
+                select o.id
+                  from shift_opportunity o
+                  join incoming_message m on m.id = o.source_message_id
+                 where m.provider_message_id = ?
+                """.trimIndent(),
+                UUID::class.java,
+                providerMessageId,
+            ).toString()
     }
 
     private fun createRuleSet(body: String): String =

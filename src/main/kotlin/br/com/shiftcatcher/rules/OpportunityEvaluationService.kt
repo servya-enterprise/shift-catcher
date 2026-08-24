@@ -48,7 +48,9 @@ class OpportunityEvaluationService(
                     autoClaimAllowed = false,
                 )
             } else {
-                ruleEngine.evaluate(contextFor(opportunity, active, evaluatedAt))
+                ruleEngine.evaluate(
+                    contextFor(opportunity, active, evaluatedAt, instanceOperationalFor(active)),
+                )
             }
 
         val record =
@@ -103,9 +105,13 @@ class OpportunityEvaluationService(
                 ?.map { id -> load(id) }
                 ?: opportunityRepository.findRecent(MAX_SIMULATION_SIZE)
 
+        // Resolved once for the whole batch: the provider rate-limits `getStateInstance`, so asking
+        // per opportunity both burns the quota and makes the answer differ across rows of the same
+        // simulation.
+        val instanceOperational = instanceOperationalFor(ruleSet)
         val results =
             opportunities.map { opportunity ->
-                val outcome = ruleEngine.evaluate(contextFor(opportunity, ruleSet, now))
+                val outcome = ruleEngine.evaluate(contextFor(opportunity, ruleSet, now, instanceOperational))
                 EvaluationResponse(
                     opportunityId = opportunity.id.toString(),
                     // The stored status is reported unchanged: a simulation moves nothing.
@@ -133,6 +139,7 @@ class OpportunityEvaluationService(
         opportunity: ShiftOpportunity,
         ruleSet: ActiveRuleSet,
         now: Instant,
+        instanceOperational: Boolean?,
     ): EvaluationContext {
         val group = opportunity.groupId?.let { groupRepository.findById(it) }
         val message = messageRepository.findById(opportunity.sourceMessageId)
@@ -142,15 +149,22 @@ class OpportunityEvaluationService(
             groupEnabled = group?.enabled ?: false,
             groupAutoClaimEnabled = group?.autoClaimEnabled ?: false,
             messageTimestamp = message?.providerTimestamp ?: opportunity.detectedAt,
-            instanceOperational =
-                if (ruleSet.definition.requireOperationalInstance) currentInstanceOperational() else null,
+            instanceOperational = instanceOperational,
             now = now,
             timezone = properties.detection.timezone,
         )
     }
 
-    /** Null means "could not tell", which the engine treats as a reason to review, never to approve. */
-    private fun currentInstanceOperational(): Boolean? = runCatching { instanceHealth.getState().operational }.getOrNull()
+    /**
+     * Only asked for when a rule actually depends on it. Null means "could not tell", which the
+     * engine treats as a reason to review, never to approve.
+     */
+    private fun instanceOperationalFor(ruleSet: ActiveRuleSet): Boolean? =
+        if (ruleSet.definition.requireOperationalInstance) {
+            runCatching { instanceHealth.getState().operational }.getOrNull()
+        } else {
+            null
+        }
 
     private fun requireOpenForEvaluation(opportunity: ShiftOpportunity) {
         val settled =
