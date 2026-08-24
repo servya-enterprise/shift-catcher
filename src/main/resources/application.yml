@@ -33,7 +33,7 @@ shift-catcher:
   security:
     admin-api-token: ${ADMIN_API_TOKEN:}
   poc:
-    stage: DETECTION
+    stage: RULES
   detection:
     # Feeds both the fast filter and the deterministic extractor; empty means "no known place",
     # which only costs a signal, never a wrong location.

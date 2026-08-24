@@ -28,9 +28,9 @@ class FoundationController(
     @GetMapping("/poc/status")
     fun pocStatus(): PocStatusResponse =
         PocStatusResponse(
-            status = "DETECTION_IN_PROGRESS",
+            status = "RULES_IN_PROGRESS",
             stage = properties.poc.stage,
-            currentWorkPackage = "WP-POC-004",
+            currentWorkPackage = "WP-POC-005",
             greenApiTransport = "VERIFIED",
             timestamp = clock.instant(),
         )

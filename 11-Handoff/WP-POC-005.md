@@ -54,16 +54,38 @@ provider keeping the offer in review; the verdict keeping the version that produ
 supersession; a manually ignored opportunity refusing re-evaluation; unknown opportunity 404;
 simulation persisting nothing and moving nothing; simulation targeting specific opportunities.
 
+## Production observation (2026-08-24)
+Exercised against the live instance right after deploy. Rule set **v1 `baseline-conservador`** was
+created, simulated, then activated: `requiredFields = [shiftDate, startTime, endTime]`,
+`maxDurationHours = 24`, `requireOperationalInstance = true`, `autoClaimEnabled = false`. Every
+preference-shaped rule (`minAmount`, `allowedCities`, `blockedLocations`, `allowedWeekdays`,
+`maxMessageAgeMinutes`, `minConfidence`) was deliberately left unset, because those encode the
+operator's own preferences and guessing them would be inventing policy.
+
+Against the three real opportunities the pipeline had produced, the verdicts were:
+- the complete offer (`2026-08-25`, 19:00→07:00, R$ 1.200, no ambiguity) → **`ELIGIBLE`**,
+  `autoClaimAllowed=false`;
+- two vague offers ("vaga de amanha as 8h, quem pega?") → **`REVIEW_REQUIRED`** with
+  `EXTRACTION_AMBIGUOUS` + `REQUIRED_FIELD_MISSING`.
+
+The simulation predicted exactly those three outcomes before activation and left every opportunity
+untouched, which is the first end-to-end confirmation of EP-032 on real data.
+
 ## Residual risks
-- **Not yet exercised in production.** No rule set exists on the live instance, so every real
-  opportunity there would evaluate to `REVIEW_REQUIRED`/`NO_ACTIVE_RULE_SET` until one is created
-  and activated. That is the intended fail-safe, not a defect.
+- **GREEN-API rate-limits `getStateInstance`.** Observed in production: a second state call moments
+  after a successful one returns `502 GREEN_API_UNAVAILABLE`. A batch simulation now resolves the
+  state once, but a run of *individual* `EP-021` calls still makes one call each, and the ones that
+  get limited record `INSTANCE_STATE_UNKNOWN` and fail safe to review. Caching the state with a
+  short TTL belongs with the worker in `WP-POC-007`; until then, prefer simulating a batch over
+  re-evaluating opportunities one by one.
 - Evaluation is only ever triggered explicitly (EP-021 or EP-032). Nothing evaluates automatically
   after ingestion, because the webhook contract forbids rules in the request; an out-of-band trigger
   belongs to `WP-POC-007`.
-- `requireOperationalInstance` calls the provider on every evaluation that enables it. With no
-  scheduler in front of it, that is one extra HTTP call per manual re-evaluation; caching the state
-  belongs with the worker in `WP-POC-007`.
+- The active rule set enforces no preference-shaped rule yet, so any structurally complete offer
+  from an enabled group becomes `ELIGIBLE`. That is harmless while no claim engine exists, but the
+  operator's real thresholds must be set in a v2 draft before `WP-POC-006` can be trusted to act.
+- `shift-catcher.detection.known-locations` and `known-cities` are still empty in production, so
+  `location`/`city` are never extracted and any city or location rule would evaluate against a null.
 - `maxMessageAgeMinutes` is measured against the provider timestamp of the source message. Any clock
   skew on the provider side shifts it directly.
 - EP-032 simulates against the 100 most recent opportunities when no ids are supplied, matching the
