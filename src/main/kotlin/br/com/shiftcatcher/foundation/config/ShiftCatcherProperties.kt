@@ -9,7 +9,18 @@ data class ShiftCatcherProperties(
     val greenApi: GreenApi = GreenApi(),
     val detection: Detection = Detection(),
     val ai: Ai = Ai(),
+    val claim: Claim = Claim(),
 ) {
+    /**
+     * The retry budget is the one fixed in `02-Architecture/Transactionality-and-Idempotency.md`.
+     * It is deliberately short: a shift offer that took three seconds to answer is already gone.
+     */
+    data class Claim(
+        val retryDelaysMs: List<Long> = listOf(0, 150, 400, 800, 1500),
+        val workerEnabled: Boolean = true,
+        val leaseSeconds: Long = 60,
+    )
+
     data class Security(
         val adminApiToken: String = "",
     )

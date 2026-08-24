@@ -115,22 +115,22 @@ endpoints:
   method: POST
   path: /opportunities/{opportunityId}/claim
   work_package: WP-POC-006
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-024
   method: GET
   path: /claims
   work_package: WP-POC-006
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-025
   method: GET
   path: /claims/{claimId}
   work_package: WP-POC-006
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-026
   method: POST
   path: /claims/{claimId}/retry
   work_package: WP-POC-006
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-027
   method: GET
   path: /rule-sets
