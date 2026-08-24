@@ -78,12 +78,15 @@ class ShiftExtractorTest {
     }
 
     @Test
-    fun `a duration without a start time leaves the start ambiguous`() {
+    fun `a duration alone pins neither end of the shift`() {
         val extracted = extractor.extract("plantao amanha 12h", mondayEvening)
 
         assertEquals(12, extracted.durationHours)
         assertNull(extracted.startTime)
-        assertTrue("startTime" in extracted.ambiguousFields)
+        assertNull(extracted.endTime)
+        // Both must be reported: the opportunity stores concrete times, not a duration, so a field
+        // left out of this list would be read downstream as an answered null.
+        assertEquals(listOf("startTime", "endTime"), extracted.ambiguousFields)
     }
 
     @Test

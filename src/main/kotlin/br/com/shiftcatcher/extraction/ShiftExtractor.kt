@@ -34,12 +34,12 @@ class ShiftExtractor(
 
         val ambiguous = mutableListOf<String>()
         if (shiftDate == null) ambiguous += "shiftDate"
-        if (range == null && durationHours == null) {
+        if (range == null) {
+            // A bare duration says how long the shift lasts but pins neither end of it, and the
+            // opportunity only stores concrete times. Reporting just one of them would leave the
+            // other silently null for whoever reads the record next.
             ambiguous += "startTime"
             ambiguous += "endTime"
-        } else if (range == null) {
-            // A bare duration tells us how long the shift is but not when it starts.
-            ambiguous += "startTime"
         }
 
         return ExtractedShift(
