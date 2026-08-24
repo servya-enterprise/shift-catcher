@@ -27,26 +27,35 @@ class ShiftExtractor(
 
         val shiftDate = parseDate(normalized, messageDate)
         val range = parseTimeRange(normalized)
+        // Only consulted when there is no explicit range: "das 7 as 19" already answers both ends.
+        val clockStart = if (range == null) parseClockTime(normalized) else null
         val durationHours = if (range == null) parseDuration(normalized) else null
+        val startTime = range?.start ?: clockStart
+        val endTime =
+            range?.end
+                ?: startTime?.let { start -> durationHours?.let { start.plusHours(it.toLong()) } }
+        val endsNextDay =
+            when {
+                range != null -> range.endsNextDay
+                startTime != null && endTime != null -> !endTime.isAfter(startTime)
+                else -> false
+            }
         val amount = parseAmount(normalized)
         val location = TextNormalizer.matchesIn(normalized, properties.detection.knownLocations).firstOrNull()
         val city = TextNormalizer.matchesIn(normalized, properties.detection.knownCities).firstOrNull()
 
         val ambiguous = mutableListOf<String>()
         if (shiftDate == null) ambiguous += "shiftDate"
-        if (range == null) {
-            // A bare duration says how long the shift lasts but pins neither end of it, and the
-            // opportunity only stores concrete times. Reporting just one of them would leave the
-            // other silently null for whoever reads the record next.
-            ambiguous += "startTime"
-            ambiguous += "endTime"
-        }
+        // Whatever could not be pinned to a concrete time is reported, because the opportunity
+        // stores times and not durations: an unreported null reads downstream as an answered one.
+        if (startTime == null) ambiguous += "startTime"
+        if (endTime == null) ambiguous += "endTime"
 
         return ExtractedShift(
             shiftDate = shiftDate,
-            startTime = range?.start,
-            endTime = range?.end,
-            endsNextDay = range?.endsNextDay ?: false,
+            startTime = startTime,
+            endTime = endTime,
+            endsNextDay = endsNextDay,
             durationHours = durationHours,
             location = location,
             city = city,
@@ -105,8 +114,18 @@ class ShiftExtractor(
         return runCatching { LocalTime.of(hourValue, minuteValue) }.getOrNull()
     }
 
+    /** `as 18h`, `das 19:30` — a clock reading, which is a start, not a length. */
+    private fun parseClockTime(normalized: String): LocalTime? {
+        val match = CLOCK_TIME.find(normalized) ?: return null
+        return timeOf(match.groupValues[1], match.groupValues[2])
+    }
+
+    /**
+     * A duration is only read when the text marks it as one: `de 12h`, `por 12h`, `12 horas`. A bare
+     * `12h` is genuinely ambiguous between "noon" and "twelve hours long", so nothing is read from it.
+     */
     private fun parseDuration(normalized: String): Int? {
-        val match = EXPLICIT_DURATION.find(normalized) ?: return null
+        val match = DURATION_PREFIXED.find(normalized) ?: DURATION_SPELLED.find(normalized) ?: return null
         return match.groupValues[1].toIntOrNull()?.takeIf { it in 1..24 }
     }
 
@@ -161,7 +180,9 @@ class ShiftExtractor(
         // `/` is deliberately not a range separator: `19/07` is a date, not 19:00-07:00.
         val TIME_RANGE =
             Regex("\\b(\\d{1,2})(?::(\\d{2}))?\\s*h?\\s*(?:-|as|ate)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*h?\\b")
-        val EXPLICIT_DURATION = Regex("\\b(\\d{1,2})\\s*h(?:oras?)?\\b")
+        val CLOCK_TIME = Regex("\\b(?:as|das|apartir das|partir das)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*h?\\b")
+        val DURATION_PREFIXED = Regex("\\b(?:de|por|durante)\\s*(\\d{1,2})\\s*h(?:oras?)?\\b")
+        val DURATION_SPELLED = Regex("\\b(\\d{1,2})\\s*horas\\b")
         val THOUSANDS_SHORTHAND = Regex("\\b(\\d+(?:[.,]\\d+)?)\\s*k\\b")
         val CURRENCY_PREFIXED = Regex("r\\$\\s*(\\d[\\d.,]*)")
         val CURRENCY_SUFFIXED = Regex("\\b(\\d[\\d.,]*)\\s*reais\\b")

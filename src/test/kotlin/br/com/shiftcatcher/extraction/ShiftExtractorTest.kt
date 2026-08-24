@@ -79,7 +79,7 @@ class ShiftExtractorTest {
 
     @Test
     fun `a duration alone pins neither end of the shift`() {
-        val extracted = extractor.extract("plantao amanha 12h", mondayEvening)
+        val extracted = extractor.extract("plantao amanha de 12h", mondayEvening)
 
         assertEquals(12, extracted.durationHours)
         assertNull(extracted.startTime)
@@ -87,6 +87,37 @@ class ShiftExtractorTest {
         // Both must be reported: the opportunity stores concrete times, not a duration, so a field
         // left out of this list would be read downstream as an answered null.
         assertEquals(listOf("startTime", "endTime"), extracted.ambiguousFields)
+    }
+
+    @Test
+    fun `a bare hour is not guessed to be either a clock time or a length`() {
+        // "plantao amanha 12h" could mean noon or twelve hours long; inventing one would be worse
+        // than reporting neither.
+        val extracted = extractor.extract("plantao amanha 12h", mondayEvening)
+
+        assertNull(extracted.startTime)
+        assertNull(extracted.endTime)
+        assertNull(extracted.durationHours)
+    }
+
+    @Test
+    fun `a time introduced by a preposition is a start, not a duration`() {
+        val extracted = extractor.extract("alguem consegue plantao pra amanha as 18h", mondayEvening)
+
+        assertEquals(LocalTime.of(18, 0), extracted.startTime)
+        assertNull(extracted.durationHours, "as 18h is a clock reading")
+        // The message still never says when it ends, so it stays incomplete rather than invented.
+        assertEquals(listOf("endTime"), extracted.ambiguousFields)
+    }
+
+    @Test
+    fun `a start plus a stated duration resolves the end`() {
+        val extracted = extractor.extract("plantao amanha as 19h por 12h", mondayEvening)
+
+        assertEquals(LocalTime.of(19, 0), extracted.startTime)
+        assertEquals(LocalTime.of(7, 0), extracted.endTime)
+        assertTrue(extracted.endsNextDay)
+        assertTrue(extracted.ambiguousFields.isEmpty(), "unexpected: ${extracted.ambiguousFields}")
     }
 
     @Test
