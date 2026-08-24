@@ -68,7 +68,7 @@ work_packages:
   - ambiguous review
 - id: WP-POC-005
   title: Rule Engine
-  status: READY
+  status: DONE
   depends_on:
   - WP-POC-004
   goal: Eligibility e versioned rules.
@@ -86,7 +86,7 @@ work_packages:
   - AI cannot bypass rules
 - id: WP-POC-006
   title: Claim Engine & quoted PEGO
-  status: PLANNED
+  status: READY
   depends_on:
   - WP-POC-005
   goal: Claim manual/auto e outbox.
