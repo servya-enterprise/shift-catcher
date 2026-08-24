@@ -145,3 +145,18 @@ work_packages:
   - sent wording frozen on the claim
   - conflict rejects only when configured
   - retraction frees the date
+- id: WP-MVP-002
+  title: Operator console
+  status: DONE
+  depends_on:
+  - WP-MVP-001
+  goal: >-
+    Tela para uma operadora (12-MVP/MVP-Scope.md item 3), renderizada no servidor em /console.
+    Deliberadamente sem endpoint novo: chama os mesmos serviços em processo, então o contrato de 42
+    operações não muda. O token de administração fica no servidor; o navegador recebe apenas sessão.
+  endpoints: []
+  acceptance:
+  - anonymous access redirects to sign-in
+  - third-party text is escaped, never markup
+  - state-changing posts need the session token
+  - reload never re-claims a shift

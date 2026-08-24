@@ -33,7 +33,10 @@ for many before the product is good for one.
    day that never cross are both hers to take. A third source, her Google Calendar, is elaborated in
    `12-MVP/Calendar-Integration.md`.
 3. **Multi-tenancy.** Each doctor with her own WhatsApp number, groups, rules, agenda and history.
-4. **A screen.** Everything today is `curl` plus a static admin token.
+4. ~~**A screen.** Everything today is `curl` plus a static admin token.~~ **Done
+   (`WP-MVP-002`).** `/console`, rendered on the server by the same application. She signs in once
+   with the admin token and the browser then carries only a session, so the credential never reaches
+   a page that displays text strangers wrote. It adds no endpoint.
 5. **Her calendar.** Writing a claimed shift into Google Calendar, and later reading it back as a
    source of commitments. Deliberately built as a service that speaks calendars rather than shifts,
    because a second project needs the same thing — see `12-MVP/Calendar-Integration.md`.
@@ -92,7 +95,10 @@ deleting the message does not undo that agreement.
 - **Nothing is pruned.** `audit_event` once wrote 120 rows in fifty seconds. Retention has to exist
   before more users generate more history.
 - **One container, no alerting.** A restart is brief downtime the outbox recovers from, but nobody
-  is told when the pipeline stops.
+  is told when the pipeline stops. The console makes this visible rather than solving it: she can
+  see that nothing has arrived, which is not the same as being told.
+- **Console sessions live in memory.** A deploy signs her out. Acceptable for one operator and one
+  container; with several, sessions need somewhere to live.
 
 ## Two risks that are strategic, not technical
 
@@ -112,8 +118,9 @@ deleting the message does not undo that agreement.
 2. ~~**Configurable message and the agenda conflict rule.**~~ **Done — `WP-MVP-001`.** Neither
    required multi-tenancy, and neither moves a POC verdict: the default wording is unchanged and the
    new rule does nothing until a rule set asks for it.
-3. **A screen for one operator.** Message log, opportunities, one-click review, claims. Writing a
-   claimed shift to Google Calendar fits here: small, self-contained, immediately felt.
+3. ~~**A screen for one operator.**~~ **Done — `WP-MVP-002`.** Offers, one-tap claim, manual
+   reading, sent replies with retract, the agenda, the message log and the wording setting. Writing
+   a claimed shift to Google Calendar still fits here: small, self-contained, immediately felt.
 4. **Multi-tenancy.** Only once the product is good for one person, because this step multiplies
    whatever exists — including its faults. Reading her calendar belongs to this milestone rather
    than the previous one, because it needs the same per-user credential machinery.

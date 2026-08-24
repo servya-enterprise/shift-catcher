@@ -53,4 +53,8 @@ Base: `/api/v1`
 para 42 operações deliberadamente e às claras. O padrão continua `PEGO` e a regra de agenda só
 vale quando um rule set a configura, de modo que a evidência do `WP-POC-008` não muda.
 
+A tela da operadora (`WP-MVP-002`) vive em `/console`, fora desta base, e chama os mesmos serviços
+em processo. Ela não acrescenta nenhuma operação a este catálogo de propósito: é outra porta de
+entrada para o mesmo produto, não produto novo.
+
 Endpoints admin da POC podem ficar restritos a localhost/VPN. Se forem expostos publicamente, adicionar auth antes do deploy.

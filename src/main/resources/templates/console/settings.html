@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{console/fragments :: head('Ajustes')}"></head>
+<body>
+<header th:replace="~{console/fragments :: chrome(${active}, ${csrfToken})}"></header>
+<main>
+  <div th:replace="~{console/fragments :: flash}"></div>
+  <h1>Ajustes</h1>
+
+  <article class="card">
+    <h2>O que responder</h2>
+    <p class="muted">
+      Uma linha, citando a oferta. Vale para todos os grupos que não tenham texto próprio.
+    </p>
+    <form th:action="@{/console/settings/claim-message}" method="post">
+      <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+      <input type="hidden" name="version" th:value="${claimMessage.version}">
+      <label for="message">Resposta</label>
+      <input id="message" name="message" type="text" maxlength="512"
+             th:value="${claimMessage.message}" required>
+      <div class="actions">
+        <button class="primary" type="submit">Salvar</button>
+      </div>
+    </form>
+    <p class="muted">
+      Mudar aqui não reescreve o que já foi enviado. As respostas antigas continuam registrando o
+      texto que realmente foi para o grupo.
+    </p>
+  </article>
+</main>
+</body>
+</html>

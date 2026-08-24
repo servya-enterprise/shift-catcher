@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{console/fragments :: head('Ofertas')}"></head>
+<body>
+<header th:replace="~{console/fragments :: chrome(${active}, ${csrfToken})}"></header>
+<main>
+  <div th:replace="~{console/fragments :: flash}"></div>
+
+  <h1>
+    Ofertas
+    <span class="badge good" th:if="${ready > 0}" th:text="${ready} + ' pronta(s)'"></span>
+    <span class="badge warn" th:if="${waiting > 0}" th:text="${waiting} + ' esperando você'"></span>
+  </h1>
+
+  <p class="empty" th:if="${opportunities.isEmpty()}">Nada por aqui ainda.</p>
+
+  <article class="card" th:each="o : ${opportunities}">
+    <div class="row">
+      <span class="when grow" th:text="${o.window}"></span>
+      <span class="badge" th:classappend="${o.tone}" th:text="${o.status}"></span>
+    </div>
+    <div class="row muted">
+      <span th:if="${!o.place.isEmpty()}" th:text="${o.place}"></span>
+      <span th:if="${!o.amount.isEmpty()}" th:text="${o.amount}"></span>
+      <span th:text="'visto ' + ${o.detectedAt}"></span>
+    </div>
+    <p class="muted" th:if="${o.readByModel}">
+      Lida pelo modelo<span th:if="${!o.confidence.isEmpty()}" th:text="' · confiança ' + ${o.confidence}"></span>.
+      Confira antes de pegar.
+    </p>
+    <p class="muted" th:if="${!o.ambiguousFields.isEmpty()}" th:text="'Não deu para ler: ' + ${o.ambiguousFields}"></p>
+    <p class="muted" th:if="${o.resolutionReason}" th:text="${o.resolutionReason}"></p>
+
+    <p class="quote" th:if="${!o.sourceText.isEmpty()}" th:text="${o.sourceText}"></p>
+    <p class="muted" th:if="${!o.senderName.isEmpty()}" th:text="'— ' + ${o.senderName}"></p>
+
+    <div class="actions">
+      <form th:if="${o.claimable}" th:action="@{'/console/opportunities/' + ${o.id} + '/claim'}" method="post">
+        <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+        <button class="primary" type="submit">Pegar</button>
+      </form>
+      <a class="btn" th:href="@{'/console/opportunities/' + ${o.id}}">Detalhes</a>
+      <form th:if="${o.openForAnalysis}" th:action="@{'/console/opportunities/' + ${o.id} + '/ignore'}" method="post">
+        <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+        <input type="hidden" name="version" th:value="${o.version}">
+        <button type="submit">Descartar</button>
+      </form>
+    </div>
+  </article>
+</main>
+</body>
+</html>

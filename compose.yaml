@@ -22,6 +22,8 @@ services:
       DB_USER: ${DB_USER:-shift_catcher}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
       ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:?ADMIN_API_TOKEN must be set}
+      # Local development is plain http on a non-localhost host name often enough to matter.
+      CONSOLE_COOKIE_SECURE: ${CONSOLE_COOKIE_SECURE:-false}
       GREEN_API_API_URL: ${GREEN_API_API_URL:-}
       GREEN_API_INSTANCE_ID: ${GREEN_API_INSTANCE_ID:-}
       GREEN_API_API_TOKEN: ${GREEN_API_API_TOKEN:-}

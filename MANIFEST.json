@@ -9,7 +9,7 @@
   "current_work_package": "WP-POC-002",
   "green_api_transport_gate": "NOT_VERIFIED",
   "endpoint_count": 42,
-  "work_package_count": 9,
+  "work_package_count": 10,
   "green_api_plan": "Developer",
   "recommended_repository": "separate from Clara Care"
 }

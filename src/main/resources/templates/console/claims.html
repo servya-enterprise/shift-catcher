@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{console/fragments :: head('Respostas')}"></head>
+<body>
+<header th:replace="~{console/fragments :: chrome(${active}, ${csrfToken})}"></header>
+<main>
+  <div th:replace="~{console/fragments :: flash}"></div>
+  <h1>Respostas enviadas</h1>
+
+  <p class="empty" th:if="${claims.isEmpty()}">Nenhuma resposta ainda.</p>
+
+  <article class="card" th:each="c : ${claims}">
+    <div class="row">
+      <span class="when grow" th:text="'&quot;' + ${c.message} + '&quot;'"></span>
+      <span class="badge" th:classappend="${c.tone}" th:text="${c.status}"></span>
+    </div>
+    <div class="row muted">
+      <span th:text="'decidida ' + ${c.decidedAt}"></span>
+      <span th:if="${!c.claimedAt.isEmpty()}" th:text="'entregue ' + ${c.claimedAt}"></span>
+      <span th:text="${c.mode == 'AUTO'} ? 'automática' : 'manual'"></span>
+      <span th:if="${c.attemptCount > 1}" th:text="${c.attemptCount} + ' tentativas'"></span>
+    </div>
+    <p class="muted" th:if="${c.failureCode}" th:text="'Falha: ' + ${c.failureCode}"></p>
+
+    <div class="actions">
+      <a class="btn" th:href="@{'/console/opportunities/' + ${c.opportunityId}}">Ver oferta</a>
+      <form th:if="${c.retryable}" th:action="@{'/console/claims/' + ${c.id} + '/retry'}" method="post">
+        <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+        <button type="submit">Tentar de novo</button>
+      </form>
+    </div>
+
+    <details th:if="${c.retractable}">
+      <summary class="muted" style="margin-top:.75rem;cursor:pointer">Voltar atrás</summary>
+      <p class="muted">
+        O WhatsApp deixa a marca de mensagem apagada, e quem já leu pode já ter passado o plantão
+        para você. Apagar não desfaz um combinado.
+      </p>
+      <form th:action="@{'/console/claims/' + ${c.id} + '/retract'}" method="post">
+        <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+        <label th:for="'reason-' + ${c.id}">Motivo</label>
+        <input th:id="'reason-' + ${c.id}" name="reason" type="text" placeholder="leitura errada">
+        <div class="actions">
+          <button class="danger" type="submit">Apagar a mensagem</button>
+        </div>
+      </form>
+    </details>
+  </article>
+</main>
+</body>
+</html>

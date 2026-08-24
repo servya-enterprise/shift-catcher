@@ -12,6 +12,7 @@
 - `claim`: transação/tentativas.
 - `reliability`: outbox/idempotência/retry.
 - `observability`: métricas/audit.
+- `console`: tela da operadora, renderizada no servidor.
 
 ## Dependências
 
@@ -25,12 +26,22 @@ extraction -> shift
 shift -> rules
 rules -> availability
 availability -> claim
+console -> shift
+console -> rules
+console -> claim
+console -> availability
+console -> messaging
 rules -> claim
 claim -> reliability
 reliability -> integration.greenapi
 ```
 
 Ciclos proibidos entre módulos de decisão.
+
+`console` é uma segunda porta de entrada sobre os mesmos serviços, chamada em processo. Ela não
+acrescenta operação em `/api/v1`, então o contrato de 42 operações continua intacto. O token fica no
+servidor e o navegador recebe só a sessão — a tela renderiza texto escrito por terceiros e não pode
+carregar credencial.
 
 `availability -> claim` lê os plantões já pegos direto de `shift_claim` em vez de espelhá-los:
 um espelho ficaria desatualizado na primeira retratação (`EP-037`) e bloquearia uma data já

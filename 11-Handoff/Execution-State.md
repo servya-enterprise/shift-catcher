@@ -18,6 +18,14 @@
   in production does not. `RuleEngineTest` 26/26 green locally; the Testcontainers suites
   (`AvailabilityIntegrationTest`, `ClaimMessageIntegrationTest`) were not run locally because no
   Docker daemon was available on the authoring machine — CI is the gate for those.
+- `WP-MVP-002`: the operator console at `/console`, server-rendered by the same application with
+  Thymeleaf. Sign-in exchanges the `ADMIN_API_TOKEN` for a session (`SameSite=strict`, HttpOnly,
+  Secure, 8h) and every state-changing POST carries a per-session CSRF token. It adds **no**
+  `/api/v1` operation - it calls the same services in-process - so the contract stays at 42.
+  `server.forward-headers-strategy: framework` was added because the container is behind Caddy and a
+  redirect rebuilt with the internal http scheme would drop her out of TLS.
+  `ConsoleControllerTest` 8/8 green locally (a `@WebMvcTest` slice, no Docker needed): it renders
+  every page and asserts that a hostile group message is escaped rather than executed.
 - `12-MVP/Calendar-Integration.md`: Google Calendar recorded as a future feature, deliberately
   shaped as a generic calendar service reused by another project. Nothing implemented.
 - Next gate: `WP-POC-008` benchmark and the GO/NO-GO verdict. It needs the corpus from `08-Quality/Benchmark-Plan.md` (100 messages, >=30 candidates, >=20 structured, >=10 ambiguous), which the production log does not contain yet.

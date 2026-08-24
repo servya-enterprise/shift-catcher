@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{console/fragments :: head('Entrar')}"></head>
+<body>
+<main>
+  <h1>Shift Catcher</h1>
+  <div class="card">
+    <p class="muted">Entre com o token de administração. Ele fica no servidor; o navegador guarda só a sessão.</p>
+    <p class="flash no" th:if="${failed}">Token incorreto.</p>
+    <form th:action="@{/console/login}" method="post">
+      <label for="token">Token</label>
+      <input id="token" name="token" type="password" autocomplete="current-password" required autofocus>
+      <div class="actions">
+        <button class="primary" type="submit">Entrar</button>
+      </div>
+    </form>
+  </div>
+</main>
+</body>
+</html>

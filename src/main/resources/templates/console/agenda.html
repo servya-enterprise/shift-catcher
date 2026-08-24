@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{console/fragments :: head('Agenda')}"></head>
+<body>
+<header th:replace="~{console/fragments :: chrome(${active}, ${csrfToken})}"></header>
+<main>
+  <div th:replace="~{console/fragments :: flash}"></div>
+  <h1>Agenda</h1>
+  <p class="muted" th:text="'De ' + ${from} + ' a ' + ${to} + '.'"></p>
+
+  <article class="card">
+    <h2>Registrar um plantão que veio de fora</h2>
+    <p class="muted">Os plantões pegos aqui já entram sozinhos — não precisa cadastrar.</p>
+    <form th:action="@{/console/agenda}" method="post">
+      <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+      <div class="fields">
+        <div>
+          <label for="shiftDate">Data</label>
+          <input id="shiftDate" name="shiftDate" type="date" required>
+        </div>
+        <div>
+          <label for="startTime">Início</label>
+          <input id="startTime" name="startTime" type="time">
+        </div>
+        <div>
+          <label for="endTime">Fim</label>
+          <input id="endTime" name="endTime" type="time">
+        </div>
+      </div>
+      <label for="label">Onde</label>
+      <input id="label" name="label" type="text" placeholder="Santa Casa">
+      <div class="actions">
+        <button class="primary" type="submit">Registrar</button>
+      </div>
+      <p class="muted">
+        Sem horário, o sistema sabe que o dia está ocupado mas não consegue comparar as horas — uma
+        oferta nesse dia vai para revisão em vez de ser recusada sozinha.
+      </p>
+    </form>
+  </article>
+
+  <p class="empty" th:if="${commitments.isEmpty()}">Nada marcado nesse período.</p>
+
+  <article class="card" th:each="c : ${commitments}">
+    <div class="row">
+      <span class="when grow" th:text="${c.window}"></span>
+      <span class="badge" th:classappend="${c.fromClaim} ? 'good' : 'pending'"
+            th:text="${c.fromClaim} ? 'pego aqui' : 'cadastrado'"></span>
+    </div>
+    <p class="muted" th:text="${c.label}"></p>
+    <div class="actions" th:unless="${c.fromClaim}">
+      <form th:action="@{'/console/agenda/' + ${c.reference} + '/delete'}" method="post">
+        <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+        <button type="submit">Remover</button>
+      </form>
+    </div>
+    <p class="muted" th:if="${c.fromClaim}">
+      Sai daqui sozinho se você voltar atrás na resposta.
+    </p>
+  </article>
+</main>
+</body>
+</html>

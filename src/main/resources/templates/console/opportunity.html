@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{console/fragments :: head('Oferta')}"></head>
+<body>
+<header th:replace="~{console/fragments :: chrome(${active}, ${csrfToken})}"></header>
+<main>
+  <div th:replace="~{console/fragments :: flash}"></div>
+
+  <div class="row">
+    <h1 class="grow" th:text="${opportunity.window}"></h1>
+    <span class="badge" th:classappend="${opportunity.tone}" th:text="${opportunity.status}"></span>
+  </div>
+
+  <article class="card">
+    <div class="row muted">
+      <span th:if="${!opportunity.place.isEmpty()}" th:text="${opportunity.place}"></span>
+      <span th:if="${!opportunity.amount.isEmpty()}" th:text="${opportunity.amount}"></span>
+      <span th:text="'visto ' + ${opportunity.detectedAt}"></span>
+    </div>
+    <p class="muted" th:if="${opportunity.readByModel}">
+      Lida pelo modelo<span th:if="${!opportunity.confidence.isEmpty()}"
+                            th:text="' · confiança ' + ${opportunity.confidence}"></span>.
+    </p>
+    <p class="muted" th:if="${opportunity.reviewNote}" th:text="'Nota: ' + ${opportunity.reviewNote}"></p>
+    <p class="quote" th:if="${!opportunity.sourceText.isEmpty()}" th:text="${opportunity.sourceText}"></p>
+    <p class="muted" th:if="${!opportunity.senderName.isEmpty()}" th:text="'— ' + ${opportunity.senderName}"></p>
+
+    <div class="actions">
+      <form th:if="${opportunity.claimable}"
+            th:action="@{'/console/opportunities/' + ${opportunity.id} + '/claim'}" method="post">
+        <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+        <button class="primary" type="submit">Pegar</button>
+      </form>
+      <form th:action="@{'/console/opportunities/' + ${opportunity.id} + '/reevaluate'}" method="post">
+        <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+        <button type="submit">Reavaliar</button>
+      </form>
+      <a class="btn" th:href="@{/console}">Voltar</a>
+    </div>
+  </article>
+
+  <article class="card" th:if="${opportunity.openForAnalysis}">
+    <h2>Corrigir a leitura</h2>
+    <p class="muted">Campo em branco mantém o que já foi lido — corrigir só a hora não custa a data.</p>
+    <form th:action="@{'/console/opportunities/' + ${opportunity.id} + '/review'}" method="post">
+      <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+      <input type="hidden" name="version" th:value="${opportunity.version}">
+      <div class="fields">
+        <div>
+          <label for="shiftDate">Data</label>
+          <input id="shiftDate" name="shiftDate" type="date" th:value="${raw.shiftDate}">
+        </div>
+        <div>
+          <label for="startTime">Início</label>
+          <input id="startTime" name="startTime" type="time" th:value="${raw.startTime}">
+        </div>
+        <div>
+          <label for="endTime">Fim</label>
+          <input id="endTime" name="endTime" type="time" th:value="${raw.endTime}">
+        </div>
+        <div>
+          <label for="amount">Valor</label>
+          <input id="amount" name="amount" type="text" inputmode="decimal" th:value="${raw.amount}">
+        </div>
+        <div>
+          <label for="location">Local</label>
+          <input id="location" name="location" type="text" th:value="${raw.location}">
+        </div>
+        <div>
+          <label for="city">Cidade</label>
+          <input id="city" name="city" type="text" th:value="${raw.city}">
+        </div>
+      </div>
+      <label for="reviewNote">Nota</label>
+      <input id="reviewNote" name="reviewNote" type="text" th:value="${raw.reviewNote}">
+      <div class="actions">
+        <button class="primary" type="submit">Salvar leitura</button>
+      </div>
+    </form>
+  </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{console/fragments :: head('Mensagens')}"></head>
+<body>
+<header th:replace="~{console/fragments :: chrome(${active}, ${csrfToken})}"></header>
+<main>
+  <div th:replace="~{console/fragments :: flash}"></div>
+  <h1>Mensagens recebidas</h1>
+  <p class="muted">O que chegou dos grupos, na ordem em que chegou. É daqui que tudo começa.</p>
+
+  <p class="empty" th:if="${messages.isEmpty()}">Nenhuma mensagem registrada.</p>
+
+  <article class="card" th:each="m : ${messages}">
+    <div class="row">
+      <span class="grow muted" th:text="${m.senderName} + ' · ' + ${m.chatName}"></span>
+      <span class="badge pending" th:text="${m.processingStatus}"></span>
+    </div>
+    <p class="quote" th:text="${m.text}"></p>
+    <div class="row muted">
+      <span th:text="${m.receivedAt}"></span>
+      <span th:if="${m.ignoredReason}" th:text="${m.ignoredReason}"></span>
+    </div>
+  </article>
+</main>
+</body>
+</html>

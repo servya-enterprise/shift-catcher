@@ -40,6 +40,9 @@ services:
       DETECTION_KNOWN_LOCATIONS: ${DETECTION_KNOWN_LOCATIONS:-}
       DETECTION_KNOWN_CITIES: ${DETECTION_KNOWN_CITIES:-}
       DETECTION_TIMEZONE: ${DETECTION_TIMEZONE:-America/Sao_Paulo}
+      # The operator console is served by this same container at /console.
+      CONSOLE_COOKIE_SECURE: ${CONSOLE_COOKIE_SECURE:-true}
+      CONSOLE_SESSION_TIMEOUT: ${CONSOLE_SESSION_TIMEOUT:-8h}
       AI_PARSER_ENABLED: ${AI_PARSER_ENABLED:-false}
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-qwen2.5:3b}

@@ -36,6 +36,14 @@ $env:ADMIN_API_TOKEN = '<token-local>'
 
 O probe nunca converte aceitação HTTP em `GO`: a citação ainda exige confirmação visual de outro participante.
 
+## Tela da operadora
+
+`https://<seu-dominio>/console`, servida pela mesma aplicação. Entra-se uma vez com o
+`ADMIN_API_TOKEN`; a partir daí o navegador carrega só a sessão, e o token nunca chega a uma página
+que exibe mensagem escrita por terceiro. Um restart derruba as sessões e pede login de novo.
+
+Ela não acrescenta endpoint: chama os mesmos serviços em processo. Ver `12-MVP/MVP-Scope.md` item 3.
+
 ## Princípio central
 
 `grupo real -> GREEN-API -> webhook -> ingestão idempotente -> detecção -> oportunidade -> claim -> SendMessage quoted -> "PEGO" no grupo`

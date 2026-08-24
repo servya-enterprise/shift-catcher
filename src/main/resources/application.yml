@@ -12,8 +12,24 @@ spring:
     time-zone: UTC
 
 server:
+  # The container listens on loopback only and is reached through the host's Caddy, so the
+  # forwarded headers are the proxy's and can be trusted. Without this a console redirect would be
+  # rebuilt with the internal http scheme and bounce her out of TLS.
+  forward-headers-strategy: framework
   error:
     include-message: never
+  servlet:
+    session:
+      # The console holds the admin token server-side and hands the browser only a session id, so
+      # the token never reaches a page that renders third-party text. These three attributes are
+      # what keep that session id from being usable by anyone else.
+      timeout: ${CONSOLE_SESSION_TIMEOUT:8h}
+      cookie:
+        http-only: true
+        # Strict, not lax: every state-changing action here is a POST, and a cross-site POST that
+        # claims a shift would send a real message in her name.
+        same-site: strict
+        secure: ${CONSOLE_COOKIE_SECURE:true}
 
 management:
   endpoints:

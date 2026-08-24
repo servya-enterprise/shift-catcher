@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<!--
+  Shared chrome for the console.
+
+  Everything that renders text a stranger wrote - group messages, sender names, locations pulled out
+  of them - uses th:text, which escapes. There is no th:utext anywhere in these templates, and that
+  is not an accident: the whole point of rendering with a template engine here rather than building
+  HTML in Kotlin is that the safe thing is the default thing.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title th:text="${title} + ' · Shift Catcher'">Shift Catcher</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --line: #dfe3e8;
+      --ink: #1b1f24;
+      --muted: #5c6672;
+      --accent: #1f6feb;
+      --good-bg: #e6f4ea; --good-ink: #10632a;
+      --warn-bg: #fdf3d8; --warn-ink: #7a5200;
+      --bad-bg: #fbe9e9;  --bad-ink: #8c1c1c;
+      --pending-bg: #eceef1; --pending-ink: #4a545f;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #14171a;
+        --surface: #1c2024;
+        --line: #2e343a;
+        --ink: #e8eaed;
+        --muted: #9aa4af;
+        --accent: #6ea8fe;
+        --good-bg: #14361f; --good-ink: #8fdca6;
+        --warn-bg: #3a2f10; --warn-ink: #f0cf7a;
+        --bad-bg: #3a1b1b;  --bad-ink: #f0a3a3;
+        --pending-bg: #24292e; --pending-ink: #aab3bd;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding-bottom: 3rem;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      position: sticky; top: 0; z-index: 5;
+    }
+    .bar { display: flex; align-items: center; gap: .75rem; padding: .75rem 1rem; max-width: 60rem; margin: 0 auto; }
+    .bar strong { font-size: 1rem; }
+    .bar form { margin-left: auto; }
+    nav { max-width: 60rem; margin: 0 auto; display: flex; gap: .25rem; padding: 0 .5rem .5rem; overflow-x: auto; }
+    nav a {
+      padding: .4rem .7rem; border-radius: 999px; text-decoration: none;
+      color: var(--muted); white-space: nowrap; font-size: .95rem;
+    }
+    nav a.on { background: var(--accent); color: #fff; }
+    main { max-width: 60rem; margin: 0 auto; padding: 1rem; }
+    .card {
+      background: var(--surface); border: 1px solid var(--line); border-radius: .75rem;
+      padding: 1rem; margin-bottom: .75rem;
+    }
+    .row { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+    .grow { flex: 1 1 auto; }
+    h1 { font-size: 1.25rem; margin: 0 0 .75rem; }
+    h2 { font-size: 1.05rem; margin: 0 0 .5rem; }
+    .when { font-size: 1.1rem; font-weight: 600; }
+    .muted { color: var(--muted); font-size: .9rem; }
+    .quote {
+      margin: .6rem 0 0; padding: .5rem .7rem; border-left: 3px solid var(--line);
+      color: var(--muted); font-size: .92rem; white-space: pre-wrap; word-break: break-word;
+    }
+    .badge {
+      display: inline-block; padding: .15rem .55rem; border-radius: 999px;
+      font-size: .78rem; font-weight: 600; letter-spacing: .02em;
+    }
+    .badge.good { background: var(--good-bg); color: var(--good-ink); }
+    .badge.warn { background: var(--warn-bg); color: var(--warn-ink); }
+    .badge.bad { background: var(--bad-bg); color: var(--bad-ink); }
+    .badge.pending, .badge.muted { background: var(--pending-bg); color: var(--pending-ink); }
+    .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .75rem; }
+    button, .btn {
+      font: inherit; padding: .6rem 1rem; border-radius: .5rem; border: 1px solid var(--line);
+      background: var(--surface); color: var(--ink); cursor: pointer; text-decoration: none;
+      min-height: 2.75rem;
+    }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    button.danger { color: var(--bad-ink); border-color: var(--bad-ink); background: transparent; }
+    label { display: block; font-size: .85rem; color: var(--muted); margin: .6rem 0 .2rem; }
+    input[type=text], input[type=password], input[type=date], input[type=time], input[type=number], textarea {
+      font: inherit; width: 100%; padding: .6rem; border-radius: .5rem;
+      border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    }
+    .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0 .75rem; }
+    .flash { border-radius: .5rem; padding: .7rem .9rem; margin-bottom: .75rem; font-size: .95rem; }
+    .flash.ok { background: var(--good-bg); color: var(--good-ink); }
+    .flash.no { background: var(--bad-bg); color: var(--bad-ink); }
+    .empty { color: var(--muted); text-align: center; padding: 2.5rem 1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    td, th { text-align: left; padding: .5rem .4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  </style>
+</head>
+<body>
+
+<header th:fragment="chrome(active, csrfToken)">
+  <div class="bar">
+    <strong>Shift Catcher</strong>
+    <form th:action="@{/console/logout}" method="post">
+      <input type="hidden" name="csrfToken" th:value="${csrfToken}">
+      <button type="submit">Sair</button>
+    </form>
+  </div>
+  <nav>
+    <a th:href="@{/console}" th:classappend="${active == 'opportunities'} ? 'on'">Ofertas</a>
+    <a th:href="@{/console/claims}" th:classappend="${active == 'claims'} ? 'on'">Respostas</a>
+    <a th:href="@{/console/agenda}" th:classappend="${active == 'agenda'} ? 'on'">Agenda</a>
+    <a th:href="@{/console/messages}" th:classappend="${active == 'messages'} ? 'on'">Mensagens</a>
+    <a th:href="@{/console/settings}" th:classappend="${active == 'settings'} ? 'on'">Ajustes</a>
+  </nav>
+</header>
+
+<div th:fragment="flash">
+  <p class="flash ok" th:if="${notice}" th:text="${notice}"></p>
+  <p class="flash no" th:if="${problem}" th:text="${problem}"></p>
+</div>
+
+</body>
+</html>
