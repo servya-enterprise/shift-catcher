@@ -13,11 +13,15 @@ services:
     volumes:
       - shift-catcher-postgres:/var/lib/postgresql
     restart: unless-stopped
+    networks:
+      default:
+        aliases:
+          - shift-catcher-db
 
   app:
     image: ${IMAGE:?IMAGE must be set, e.g. ghcr.io/OWNER/shift-catcher:latest}
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-shift_catcher}
+      DB_URL: jdbc:postgresql://shift-catcher-db:5432/${DB_NAME:-shift_catcher}
       DB_USER: ${DB_USER:-shift_catcher}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
       ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:?ADMIN_API_TOKEN must be set}
