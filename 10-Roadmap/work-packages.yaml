@@ -101,7 +101,7 @@ work_packages:
   - quote immutable
 - id: WP-POC-007
   title: Reliability & observability
-  status: READY
+  status: DONE
   depends_on:
   - WP-POC-006
   goal: Recovery, health, audit e métricas.
@@ -113,7 +113,7 @@ work_packages:
   - latency percentiles
 - id: WP-POC-008
   title: Benchmark & GO-NO-GO
-  status: PLANNED
+  status: READY
   depends_on:
   - WP-POC-007
   goal: Executar benchmark e decisão factual.
