@@ -1,4 +1,4 @@
-package br.com.shiftcatcher.integration.greenapi
+package br.com.shiftcatcher.messaging
 
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository
@@ -12,7 +12,11 @@ class IncomingProviderEventRepository(
     private val jdbcTemplate: JdbcTemplate,
 ) {
     @Transactional
-    fun record(message: IncomingTransportMessage): RecordedProviderEvent {
+    fun record(
+        message: IncomingTransportMessage,
+        correlationId: String?,
+        payloadHash: String?,
+    ): RecordedProviderEvent {
         val inserted =
             jdbcTemplate
                 .query(
@@ -37,6 +41,8 @@ class IncomingProviderEventRepository(
                     message.senderContactName,
                     message.messageType,
                     message.messageText,
+                    payloadHash,
+                    correlationId,
                 ).firstOrNull()
         if (inserted != null) {
             return inserted
@@ -54,6 +60,22 @@ class IncomingProviderEventRepository(
             message.instanceId,
             message.webhookType,
             message.providerMessageId,
+        )
+    }
+
+    @Transactional
+    fun updateProcessing(
+        id: UUID,
+        status: ProcessingStatus,
+        ignoredReason: IgnoredReason?,
+        at: Instant,
+    ) {
+        jdbcTemplate.update(
+            UPDATE_PROCESSING_SQL,
+            status.name,
+            ignoredReason?.name,
+            Timestamp.from(at),
+            id,
         )
     }
 
@@ -81,9 +103,10 @@ class IncomingProviderEventRepository(
             insert into incoming_provider_event (
                 provider, instance_id, webhook_type, provider_message_id, provider_timestamp,
                 webhook_received_at, parsing_completed_at, chat_id, chat_name, sender_id,
-                sender_name, sender_contact_name, message_type, message_text
+                sender_name, sender_contact_name, message_type, message_text, payload_hash,
+                correlation_id, processing_status
             ) values (
-                'GREEN_API', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                'GREEN_API', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'RECEIVED'
             )
             on conflict (provider, instance_id, webhook_type, provider_message_id) do nothing
             returning id, persisted_at
@@ -100,6 +123,15 @@ class IncomingProviderEventRepository(
             returning id, persisted_at
             """.trimIndent()
 
+        val UPDATE_PROCESSING_SQL =
+            """
+            update incoming_provider_event
+               set processing_status = ?,
+                   ignored_reason = ?,
+                   processing_updated_at = ?
+             where id = ?
+            """.trimIndent()
+
         val LATEST_SQL =
             """
             select id, chat_id, sender_id, provider_message_id, provider_timestamp,
@@ -110,6 +142,23 @@ class IncomingProviderEventRepository(
              limit 1
             """.trimIndent()
     }
+}
+
+/**
+ * Provider event lifecycle from `04-Domain/State-Machines.md`. `PROCESSED` is reserved for the
+ * detection stage that WP-POC-004 adds; ingestion only moves an event to `PENDING` or `IGNORED`.
+ */
+enum class ProcessingStatus {
+    RECEIVED,
+    PENDING,
+    PROCESSED,
+    IGNORED,
+    FAILED,
+}
+
+enum class IgnoredReason {
+    GROUP_NOT_ALLOWLISTED,
+    GROUP_DISABLED,
 }
 
 data class IncomingTransportMessage(

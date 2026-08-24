@@ -2,6 +2,8 @@ package br.com.shiftcatcher.integration.greenapi
 
 import br.com.shiftcatcher.foundation.config.ShiftCatcherProperties
 import br.com.shiftcatcher.foundation.http.ApiProblemException
+import br.com.shiftcatcher.messaging.IncomingProviderEventRepository
+import br.com.shiftcatcher.messaging.LatestProviderEvent
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets

@@ -1,5 +1,6 @@
 package br.com.shiftcatcher.integration.greenapi
 
+import br.com.shiftcatcher.foundation.http.CORRELATION_ID_MDC_KEY
 import br.com.shiftcatcher.foundation.http.REQUEST_RECEIVED_AT_ATTRIBUTE
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.web.bind.annotation.PostMapping
@@ -19,6 +20,11 @@ class GreenApiWebhookController(
         request: HttpServletRequest,
     ): WebhookIngestionResponse {
         val receivedAt = request.getAttribute(REQUEST_RECEIVED_AT_ATTRIBUTE) as? Instant ?: Instant.now()
-        return service.ingest(envelope, receivedAt)
+        return service.ingest(
+            envelope = envelope,
+            receivedAt = receivedAt,
+            correlationId = request.getAttribute(CORRELATION_ID_MDC_KEY) as? String,
+            payloadHash = request.getAttribute(WEBHOOK_PAYLOAD_HASH_ATTRIBUTE) as? String,
+        )
     }
 }

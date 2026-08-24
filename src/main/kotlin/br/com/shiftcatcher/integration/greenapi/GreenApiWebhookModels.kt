@@ -33,8 +33,11 @@ data class GreenApiWebhookEnvelope(
 data class WebhookIngestionResponse(
     val status: WebhookIngestionStatus,
     val eventId: String? = null,
+    val messageId: String? = null,
     val receivedAt: java.time.Instant,
     val persistedAt: java.time.Instant? = null,
+    val processingStatus: String? = null,
+    val ignoredReason: String? = null,
 )
 
 enum class WebhookIngestionStatus {

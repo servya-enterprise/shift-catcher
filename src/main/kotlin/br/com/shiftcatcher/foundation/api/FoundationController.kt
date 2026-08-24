@@ -28,10 +28,10 @@ class FoundationController(
     @GetMapping("/poc/status")
     fun pocStatus(): PocStatusResponse =
         PocStatusResponse(
-            status = "TRANSPORT_PROOF_REQUIRED",
+            status = "INGESTION_IN_PROGRESS",
             stage = properties.poc.stage,
-            currentWorkPackage = "WP-POC-002",
-            greenApiTransport = "NOT_VERIFIED",
+            currentWorkPackage = "WP-POC-003",
+            greenApiTransport = "VERIFIED",
             timestamp = clock.instant(),
         )
 }

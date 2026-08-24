@@ -49,8 +49,16 @@ class GreenApiWebhookAuthFilter(
             writeProblem(request, response, 401, "Unauthorized", "Valid webhook bearer token required")
             return
         }
+        // Hashed here because this is the only place the raw bytes exist; the payload itself is not stored.
+        request.setAttribute(WEBHOOK_PAYLOAD_HASH_ATTRIBUTE, sha256Hex(body))
         filterChain.doFilter(CachedBodyRequest(request, body), response)
     }
+
+    private fun sha256Hex(body: ByteArray): String =
+        MessageDigest
+            .getInstance("SHA-256")
+            .digest(body)
+            .joinToString("") { "%02x".format(it) }
 
     private fun constantTimeEquals(
         expected: String,
@@ -92,6 +100,8 @@ class GreenApiWebhookAuthFilter(
         const val MAX_WEBHOOK_BYTES = 256 * 1024
     }
 }
+
+const val WEBHOOK_PAYLOAD_HASH_ATTRIBUTE = "greenApiWebhookPayloadHash"
 
 private class CachedBodyRequest(
     request: HttpServletRequest,

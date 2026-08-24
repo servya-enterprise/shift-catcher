@@ -45,7 +45,9 @@ class GreenApiTransportIntegrationTest(
     @BeforeEach
     fun reset() {
         jdbcTemplate.update("delete from transport_test_reply")
+        jdbcTemplate.update("delete from incoming_message")
         jdbcTemplate.update("delete from incoming_provider_event")
+        jdbcTemplate.update("delete from allowed_group")
         fake.reset()
     }
 

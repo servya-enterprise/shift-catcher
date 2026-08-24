@@ -14,7 +14,7 @@ work_packages:
   - no Clara Care dependency
 - id: WP-POC-002
   title: GREEN-API transport proof
-  status: READY
+  status: DONE
   depends_on:
   - WP-POC-001
   goal: Provar grupo real, webhook, state e quote.
@@ -30,7 +30,7 @@ work_packages:
   - non-operational blocks send
 - id: WP-POC-003
   title: Ingestion & group allowlist
-  status: PLANNED
+  status: READY
   depends_on:
   - WP-POC-002
   goal: Persistir/deduplicar e filtrar grupos.
