@@ -131,7 +131,7 @@ class AutoClaimDefaultOffIntegrationTest(
                       },
                       "messageData": {
                         "typeMessage": "textMessage",
-                        "textMessageData": {"textMessage": "Plantao amanha 19-07 R\$ 1.200"}
+                        "textMessageData": {"textMessage": "Plantao amanha 19-07 R$ 1.200"}
                       }
                     }
                     """.trimIndent()
