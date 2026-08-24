@@ -33,7 +33,16 @@ shift-catcher:
   security:
     admin-api-token: ${ADMIN_API_TOKEN:}
   poc:
-    stage: INGESTION
+    stage: DETECTION
+  detection:
+    # Feeds both the fast filter and the deterministic extractor; empty means "no known place",
+    # which only costs a signal, never a wrong location.
+    known-locations: ${DETECTION_KNOWN_LOCATIONS:}
+    known-cities: ${DETECTION_KNOWN_CITIES:}
+    timezone: ${DETECTION_TIMEZONE:America/Sao_Paulo}
+  ai:
+    # Stays false until a real adapter exists: DEC-004 and the fallback policy both require it.
+    enabled: ${AI_PARSER_ENABLED:false}
   green-api:
     api-url: ${GREEN_API_API_URL:}
     instance-id: ${GREEN_API_INSTANCE_ID:}

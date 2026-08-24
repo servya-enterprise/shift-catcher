@@ -37,6 +37,8 @@ class IngestionAndAllowlistIntegrationTest(
 ) {
     @BeforeEach
     fun reset() {
+        jdbcTemplate.update("delete from shift_opportunity")
+        jdbcTemplate.update("delete from detection_result")
         jdbcTemplate.update("delete from incoming_message")
         jdbcTemplate.update("delete from incoming_provider_event")
         jdbcTemplate.update("delete from allowed_group")
@@ -177,18 +179,18 @@ class IngestionAndAllowlistIntegrationTest(
     }
 
     @Test
-    fun `a message from an allowlisted group is queued for detection`() {
+    fun `a message from an allowlisted group is analyzed on arrival`() {
         val id = groupId(registerGroup(GROUP_CHAT_ID))
 
         postWebhook(webhook()).andExpect {
             status { isOk() }
-            jsonPath("$.processingStatus") { value("PENDING") }
+            jsonPath("$.processingStatus") { value("PROCESSED") }
             jsonPath("$.ignoredReason") { value(null) }
         }
 
         val storedGroup = jdbcTemplate.queryForObject("select group_id from incoming_message", UUID::class.java)
         assertEquals(id, storedGroup.toString())
-        assertEquals("PENDING", processingStatus())
+        assertEquals("PROCESSED", processingStatus())
     }
 
     @Test
@@ -228,7 +230,7 @@ class IngestionAndAllowlistIntegrationTest(
         postWebhook(webhook()).andExpect {
             status { isOk() }
             jsonPath("$.status") { value("DUPLICATE") }
-            jsonPath("$.processingStatus") { value("PENDING") }
+            jsonPath("$.processingStatus") { value("PROCESSED") }
         }
 
         assertEquals(1, countOf("incoming_message"))
@@ -269,18 +271,18 @@ class IngestionAndAllowlistIntegrationTest(
 
         mockMvc.post("/api/v1/messages/$messageId/reprocess") { adminBearer() }.andExpect {
             status { isOk() }
-            jsonPath("$.processingStatus") { value("PENDING") }
+            jsonPath("$.processingStatus") { value("PROCESSED") }
             jsonPath("$.groupId") { value(id) }
             jsonPath("$.changed") { value(true) }
         }
         mockMvc.post("/api/v1/messages/$messageId/reprocess") { adminBearer() }.andExpect {
             status { isOk() }
-            jsonPath("$.processingStatus") { value("PENDING") }
+            jsonPath("$.processingStatus") { value("PROCESSED") }
             jsonPath("$.changed") { value(false) }
         }
 
         assertEquals(1, countOf("incoming_message"))
-        assertEquals("PENDING", processingStatus())
+        assertEquals("PROCESSED", processingStatus())
     }
 
     @Test

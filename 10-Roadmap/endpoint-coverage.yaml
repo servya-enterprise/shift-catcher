@@ -40,7 +40,7 @@ endpoints:
   method: POST
   path: /groups
   work_package: WP-POC-003
-  status: IMPLEMENTED
+  status: VERIFIED
 - id: EP-009
   method: GET
   path: /groups/{groupId}
@@ -75,7 +75,7 @@ endpoints:
   method: GET
   path: /messages
   work_package: WP-POC-003
-  status: IMPLEMENTED
+  status: VERIFIED
 - id: EP-016
   method: GET
   path: /messages/{messageId}
@@ -85,22 +85,22 @@ endpoints:
   method: POST
   path: /messages/{messageId}/reprocess
   work_package: WP-POC-003
-  status: IMPLEMENTED
+  status: VERIFIED
 - id: EP-018
   method: GET
   path: /opportunities
   work_package: WP-POC-004
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-019
   method: GET
   path: /opportunities/{opportunityId}
   work_package: WP-POC-004
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-020
   method: POST
   path: /opportunities/{opportunityId}/review
   work_package: WP-POC-004
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-021
   method: POST
   path: /opportunities/{opportunityId}/reevaluate
@@ -110,7 +110,7 @@ endpoints:
   method: POST
   path: /opportunities/{opportunityId}/ignore
   work_package: WP-POC-004
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-023
   method: POST
   path: /opportunities/{opportunityId}/claim
@@ -170,7 +170,7 @@ endpoints:
   method: POST
   path: /poc/detect
   work_package: WP-POC-004
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-035
   method: POST
   path: /poc/benchmark/start
