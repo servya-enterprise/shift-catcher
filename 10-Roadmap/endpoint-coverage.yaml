@@ -20,72 +20,72 @@ endpoints:
   method: POST
   path: /webhooks/green-api
   work_package: WP-POC-002
-  status: IMPLEMENTED
+  status: VERIFIED
 - id: EP-005
   method: GET
   path: /integrations/green-api/state
   work_package: WP-POC-002
-  status: IMPLEMENTED
+  status: VERIFIED
 - id: EP-006
   method: POST
   path: /integrations/green-api/verify
   work_package: WP-POC-002
-  status: IMPLEMENTED
+  status: VERIFIED
 - id: EP-007
   method: GET
   path: /groups
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-008
   method: POST
   path: /groups
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-009
   method: GET
   path: /groups/{groupId}
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-010
   method: PATCH
   path: /groups/{groupId}
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-011
   method: POST
   path: /groups/{groupId}/enable
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-012
   method: POST
   path: /groups/{groupId}/disable
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-013
   method: POST
   path: /groups/{groupId}/auto-claim/enable
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-014
   method: POST
   path: /groups/{groupId}/auto-claim/disable
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-015
   method: GET
   path: /messages
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-016
   method: GET
   path: /messages/{messageId}
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-017
   method: POST
   path: /messages/{messageId}/reprocess
   work_package: WP-POC-003
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-018
   method: GET
   path: /opportunities
@@ -165,7 +165,7 @@ endpoints:
   method: POST
   path: /poc/send-test-reply
   work_package: WP-POC-002
-  status: IMPLEMENTED
+  status: VERIFIED
 - id: EP-034
   method: POST
   path: /poc/detect
