@@ -48,16 +48,16 @@ class FoundationIntegrationTest(
     }
 
     @Test
-    fun `status keeps real transport gate unverified`() {
+    fun `status reports the transport gate as evidenced and ingestion as current`() {
         mockMvc
             .get("/api/v1/poc/status") {
                 header("Authorization", "Bearer test-admin-token")
             }.andExpect {
                 status { isOk() }
                 header { string("X-Correlation-Id", matchesPattern("[0-9a-f-]{36}")) }
-                jsonPath("$.status") { value("TRANSPORT_PROOF_REQUIRED") }
-                jsonPath("$.currentWorkPackage") { value("WP-POC-002") }
-                jsonPath("$.greenApiTransport") { value("NOT_VERIFIED") }
+                jsonPath("$.status") { value("INGESTION_IN_PROGRESS") }
+                jsonPath("$.currentWorkPackage") { value("WP-POC-003") }
+                jsonPath("$.greenApiTransport") { value("VERIFIED") }
             }
     }
 

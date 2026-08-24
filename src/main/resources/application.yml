@@ -33,7 +33,7 @@ shift-catcher:
   security:
     admin-api-token: ${ADMIN_API_TOKEN:}
   poc:
-    stage: TRANSPORT
+    stage: INGESTION
   green-api:
     api-url: ${GREEN_API_API_URL:}
     instance-id: ${GREEN_API_INSTANCE_ID:}
