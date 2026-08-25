@@ -58,6 +58,8 @@ class BenchmarkIntegrationTest(
         val report = awaitReport(benchmarkId)
         assertEquals("COMPLETED", JsonPath.read<String>(report, "$.status"))
         assertEquals(2, JsonPath.read<Int>(report, "$.corpusSize"))
+        assertEquals("SYNTHETIC", JsonPath.read<String>(report, "$.provenance"))
+        assertEquals(false, JsonPath.read<Boolean>(report, "$.report.corpus.admissibleAsGoEvidence"))
         assertEquals(1, JsonPath.read<Int>(report, "$.report.detection.truePositives"))
         assertEquals(1, JsonPath.read<Int>(report, "$.report.detection.trueNegatives"))
 
@@ -84,11 +86,23 @@ class BenchmarkIntegrationTest(
                 contentType = MediaType.APPLICATION_JSON
                 content =
                     """
-                    {"cases":[{"reference":"ghost","messageId":"00000000-0000-0000-0000-000000000000"}]}
+                    {"provenance":"SYNTHETIC","cases":[{"reference":"ghost","messageId":"00000000-0000-0000-0000-000000000000"}]}
                     """.trimIndent()
             }.andExpect { status { isNotFound() } }
 
         // Refused at the door, so nothing occupies the single-run slot.
+        assertEquals(0, countOf("benchmark_run"))
+    }
+
+    @Test
+    fun `a corpus that does not say where it came from is refused`() {
+        mockMvc
+            .post("/api/v1/poc/benchmark/start") {
+                adminBearer()
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"cases":[{"text":"Plantao 25/08 19-07"}]}"""
+            }.andExpect { status { isBadRequest() } }
+
         assertEquals(0, countOf("benchmark_run"))
     }
 
@@ -98,7 +112,7 @@ class BenchmarkIntegrationTest(
             .post("/api/v1/poc/benchmark/start") {
                 adminBearer()
                 contentType = MediaType.APPLICATION_JSON
-                content = """{"cases":[]}"""
+                content = """{"provenance":"SYNTHETIC","cases":[]}"""
             }.andExpect { status { isBadRequest() } }
     }
 
@@ -108,8 +122,8 @@ class BenchmarkIntegrationTest(
         // the index rather than the timing of a fast run.
         jdbcTemplate.update(
             """
-            insert into benchmark_run (status, label, corpus_size, ai_enabled, started_at)
-            values ('RUNNING', 'planted', 1, false, current_timestamp)
+            insert into benchmark_run (status, label, provenance, corpus_size, ai_enabled, started_at)
+            values ('RUNNING', 'planted', 'SYNTHETIC', 1, false, current_timestamp)
             """.trimIndent(),
         )
 
@@ -175,6 +189,7 @@ class BenchmarkIntegrationTest(
             """
             {
               "label": "smoke",
+              "provenance": "SYNTHETIC",
               "cases": [
                 {
                   "reference": "offer",
