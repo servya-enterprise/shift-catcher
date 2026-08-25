@@ -1,6 +1,15 @@
 spring:
   application:
     name: shift-catcher
+  task:
+    scheduling:
+      pool:
+        # One thread per @Scheduled job, because the default is one thread for all of them and they
+        # are not equals: the outbox poller is what actually sends the claim, and it was queueing
+        # behind a provider health check that can hang for the connect plus read timeout. A measured
+        # send is 179 ms; the stall it could sit behind is seven seconds.
+        size: ${SCHEDULER_POOL_SIZE:5}
+      thread-name-prefix: shift-catcher-sched-
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/shift_catcher}
     username: ${DB_USER:shift_catcher}
@@ -73,6 +82,18 @@ shift-catcher:
     auto-claim-interval-ms: ${AUTO_CLAIM_INTERVAL_MS:1000}
     poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:500}
     health-interval-ms: ${HEALTH_INTERVAL_MS:60000}
+  retention:
+    # Nothing was ever deleted before this. Message content is redacted in place - the rows and their
+    # dedupe keys survive, the third party's words do not - while audit, spent outbox intents and old
+    # benchmark reports are deleted.
+    enabled: ${RETENTION_ENABLED:true}
+    # Armed only on purpose. Until this is false the pass counts and logs, and changes nothing.
+    dry-run: ${RETENTION_DRY_RUN:true}
+    # The longest window, because the message log is where the real WP-POC-008 corpus comes from.
+    message-content: ${RETENTION_MESSAGE_CONTENT:180d}
+    audit-trail: ${RETENTION_AUDIT_TRAIL:90d}
+    spent-outbox: ${RETENTION_SPENT_OUTBOX:90d}
+    benchmark-reports: ${RETENTION_BENCHMARK_REPORTS:90d}
   green-api:
     api-url: ${GREEN_API_API_URL:}
     instance-id: ${GREEN_API_INSTANCE_ID:}

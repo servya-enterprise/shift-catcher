@@ -86,6 +86,19 @@ class ProviderHealthGate(
     private val properties: ShiftCatcherProperties,
     private val clock: Clock = Clock.systemUTC(),
 ) {
+    /**
+     * One live provider call at a time.
+     *
+     * Refreshing reads the stored observation, calls GREEN-API and writes the result back. Two
+     * refreshes at once spend two calls of a rate-limited quota to learn one fact, and both compute
+     * `consecutiveFailures` from the same stale read, so an outage counts as one failure instead of
+     * two. Callers already existed on two threads - the scheduler and an `EP-023` request - so this
+     * race is not new; giving the schedulers a thread each just makes it ordinary.
+     */
+    private val refreshing =
+        java.util.concurrent.atomic
+            .AtomicBoolean(false)
+
     fun isOperational(): Boolean = observe().operational
 
     /** Null-safe view used by the metrics endpoint and by the automatic trigger. */
@@ -119,6 +132,29 @@ class ProviderHealthGate(
 
     /** Called on a schedule and whenever the cached observation has gone stale. */
     fun refresh(): ProviderHealthObservation {
+        if (!refreshing.compareAndSet(false, true)) {
+            // Someone is already asking. Waiting for them would park this thread behind a network
+            // call, which is precisely what the claim path must never do; and not knowing is never
+            // permission to act, so the fallback answer blocks rather than allows.
+            return repository.latest() ?: unknown()
+        }
+        return try {
+            observeAndRecord()
+        } finally {
+            refreshing.set(false)
+        }
+    }
+
+    private fun unknown(): ProviderHealthObservation =
+        ProviderHealthObservation(
+            state = "UNKNOWN",
+            operational = false,
+            observedAt = clock.instant(),
+            consecutiveFailures = 0,
+            lastError = "a refresh was already in flight",
+        )
+
+    private fun observeAndRecord(): ProviderHealthObservation {
         val previous = repository.latest()
         val observation =
             runCatching { instanceHealth.getState() }

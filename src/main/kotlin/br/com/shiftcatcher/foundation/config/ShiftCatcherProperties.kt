@@ -10,7 +10,28 @@ data class ShiftCatcherProperties(
     val detection: Detection = Detection(),
     val ai: Ai = Ai(),
     val claim: Claim = Claim(),
+    val retention: Retention = Retention(),
 ) {
+    /**
+     * How long things are kept. Message content is redacted in place rather than deleted; audit,
+     * spent outbox intents and old benchmark reports are deleted outright.
+     *
+     * [dryRun] defaults to true and that is deliberate. This is the only code here that destroys
+     * data, so it reports what it would do until somebody has read the numbers and armed it.
+     *
+     * [messageContent] is the longest period on purpose: the message log is where the real corpus
+     * for `WP-POC-008` comes from, and shortening this destroys corpus material that cannot be
+     * recovered.
+     */
+    data class Retention(
+        val enabled: Boolean = true,
+        val dryRun: Boolean = true,
+        val messageContent: java.time.Duration = java.time.Duration.ofDays(180),
+        val auditTrail: java.time.Duration = java.time.Duration.ofDays(90),
+        val spentOutbox: java.time.Duration = java.time.Duration.ofDays(90),
+        val benchmarkReports: java.time.Duration = java.time.Duration.ofDays(90),
+    )
+
     /**
      * The retry budget is the one fixed in `02-Architecture/Transactionality-and-Idempotency.md`.
      * It is deliberately short: a shift offer that took three seconds to answer is already gone.

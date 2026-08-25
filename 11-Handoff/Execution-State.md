@@ -54,6 +54,23 @@
 - `WP-POC-008` stays `READY`, not DONE: the harness exists, the run has not happened. It still needs
   the labelled corpus of `08-Quality/Benchmark-Plan.md` (100 messages, >=30 candidates, >=20
   structured, >=10 ambiguous), which the production log does not contain yet.
+- Scheduler: `spring.task.scheduling.pool.size` was unset, so Spring's default of **one** thread
+  carried all five `@Scheduled` jobs. One of them calls GREEN-API with a 2s connect plus 5s read
+  timeout, and the outbox poller - the thing that actually sends the claim - queued behind it. A
+  measured send is 179 ms. Now one thread per job (`SCHEDULER_POOL_SIZE`, default 5). Because that
+  lets jobs overlap, `ProviderHealthGate.refresh` now allows one live provider call at a time and
+  answers the others with the stored observation, or `UNKNOWN` (which blocks) when there is none.
+  That race pre-dated the change - an `EP-023` request and the scheduler could already collide - it
+  was simply rarer.
+- Retention exists (`V13`, `RetentionService`): message content is **redacted in place** and audit,
+  spent outbox intents and old benchmark reports are deleted. Nothing had ever been deleted before.
+  It runs **dry-run by default** (`RETENTION_DRY_RUN=true`): it counts, logs and audits what it
+  would do and changes nothing. Arm it only after reading a pass. Content default is 180 days, the
+  longest window on purpose, because the message log is where the real `WP-POC-008` corpus comes from.
+- `08-Quality/POC-Acceptance-Test.md` reconciled 2026-08-25 against recorded evidence: 18 of 23 boxes
+  are ticked with a citation each. The five open ones are the honest ones - phone-usability over
+  days, the benchmark on a real corpus, and any percentile worth the name (production holds one real
+  claim).
 - Next gate: `WP-POC-008` benchmark and the GO/NO-GO verdict. It needs the corpus from `08-Quality/Benchmark-Plan.md` (100 messages, >=30 candidates, >=20 structured, >=10 ambiguous), which the production log does not contain yet.
 - The automatic claim path exists but is disarmed: it needs `shift-catcher.claim.auto-claim-enabled` (defaults false, unset in production), the active rule set's `autoClaimEnabled` (false in v1), and the group flag (off). Any one of them off means nothing is claimed without an explicit `EP-023` call.
 - First real claim executed 2026-08-24 via `EP-023`: decided 18:48:45.123Z, provider accepted 18:48:45.463Z (340 ms, inside the 1000 ms SLO), one attempt, no retries, quoting the real offer message.

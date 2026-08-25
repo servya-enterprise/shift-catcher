@@ -10,7 +10,7 @@
 - `rules`: elegibilidade/auto-claim.
 - `availability`: compromissos já assumidos, de fontes plurais (`CommitmentSourcePort`).
 - `claim`: transação/tentativas.
-- `reliability`: outbox/idempotência/retry.
+- `reliability`: outbox/idempotência/retry/retenção.
 - `observability`: métricas/audit.
 - `console`: tela da operadora, renderizada no servidor.
 - `benchmark`: replay do corpus rotulado para o gate do `WP-POC-008`.
@@ -51,6 +51,13 @@ carregar credencial.
 e a avaliação usa uma oportunidade sintética que nunca chega ao banco. Um benchmark que criasse
 claims responderia as ofertas reais que está medindo. Roda em thread própria, não no scheduler
 compartilhado, porque uma inferência de minutos travaria os claims que ele existe para proteger.
+
+A retenção **redige** a cadeia de mensagens em vez de apagá-la. `shift_claim` referencia
+`shift_opportunity`, que referencia `incoming_message`, que referencia `incoming_provider_event`, e
+um claim é o registro de uma mensagem que foi mesmo para um grupo. Apagar a linha também derrubaria
+a chave de deduplicação: um webhook reentregue deixaria de ser reconhecido como duplicata. As linhas
+ficam, as palavras saem — que é também a resposta melhor para quem escreveu naquele grupo e nunca
+consentiu com nada.
 
 `availability -> claim` lê os plantões já pegos direto de `shift_claim` em vez de espelhá-los:
 um espelho ficaria desatualizado na primeira retratação (`EP-037`) e bloquearia uma data já
