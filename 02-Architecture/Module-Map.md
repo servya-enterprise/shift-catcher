@@ -13,6 +13,7 @@
 - `reliability`: outbox/idempotência/retry.
 - `observability`: métricas/audit.
 - `console`: tela da operadora, renderizada no servidor.
+- `benchmark`: replay do corpus rotulado para o gate do `WP-POC-008`.
 
 ## Dependências
 
@@ -31,6 +32,9 @@ console -> rules
 console -> claim
 console -> availability
 console -> messaging
+benchmark -> detection
+benchmark -> rules
+benchmark -> messaging
 rules -> claim
 claim -> reliability
 reliability -> integration.greenapi
@@ -42,6 +46,11 @@ Ciclos proibidos entre módulos de decisão.
 acrescenta operação em `/api/v1`, então o contrato de 42 operações continua intacto. O token fica no
 servidor e o navegador recebe só a sessão — a tela renderiza texto escrito por terceiros e não pode
 carregar credencial.
+
+`benchmark` atravessa o pipeline sem gravar nada: `MessageAnalysisService.preview` não persiste,
+e a avaliação usa uma oportunidade sintética que nunca chega ao banco. Um benchmark que criasse
+claims responderia as ofertas reais que está medindo. Roda em thread própria, não no scheduler
+compartilhado, porque uma inferência de minutos travaria os claims que ele existe para proteger.
 
 `availability -> claim` lê os plantões já pegos direto de `shift_claim` em vez de espelhá-los:
 um espelho ficaria desatualizado na primeira retratação (`EP-037`) e bloquearia uma data já

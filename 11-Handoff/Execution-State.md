@@ -28,6 +28,18 @@
   every page and asserts that a hostile group message is escaped rather than executed.
 - `12-MVP/Calendar-Integration.md`: Google Calendar recorded as a future feature, deliberately
   shaped as a generic calendar service reused by another project. Nothing implemented.
+- `EP-035`/`EP-036` are now IMPLEMENTED (`benchmark` module, migration `V11`). They had been
+  SPECIFIED since the baseline, which meant `WP-POC-008` had no harness and could not have run even
+  with a corpus in hand - the earlier note that it "needs corpus and time in the group, not code"
+  was incomplete. The replay persists no opportunity and no claim and sends nothing, and it runs on
+  its own thread rather than the shared scheduler. It reports facts per criterion and computes **no**
+  GO/NO-GO: the three criteria a replay cannot reach (provider-accepted latency, duplicate claims
+  under concurrency, visual confirmation of the quote) are listed as `NOT_MEASURABLE_HERE` rather
+  than omitted. `BenchmarkScoringTest` 7/7 green locally with the real detector, extractor and rule
+  engine; `BenchmarkIntegrationTest` is CI's.
+- `WP-POC-008` stays `READY`, not DONE: the harness exists, the run has not happened. It still needs
+  the labelled corpus of `08-Quality/Benchmark-Plan.md` (100 messages, >=30 candidates, >=20
+  structured, >=10 ambiguous), which the production log does not contain yet.
 - Next gate: `WP-POC-008` benchmark and the GO/NO-GO verdict. It needs the corpus from `08-Quality/Benchmark-Plan.md` (100 messages, >=30 candidates, >=20 structured, >=10 ambiguous), which the production log does not contain yet.
 - The automatic claim path exists but is disarmed: it needs `shift-catcher.claim.auto-claim-enabled` (defaults false, unset in production), the active rule set's `autoClaimEnabled` (false in v1), and the group flag (off). Any one of them off means nothing is claimed without an explicit `EP-023` call.
 - First real claim executed 2026-08-24 via `EP-023`: decided 18:48:45.123Z, provider accepted 18:48:45.463Z (340 ms, inside the 1000 ms SLO), one attempt, no retries, quoting the real offer message.

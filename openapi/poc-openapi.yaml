@@ -1695,7 +1695,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericObject'
+                $ref: '#/components/schemas/BenchmarkStartResponse'
         '400':
           description: Invalid request
           content:
@@ -1725,7 +1725,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericObject'
+              $ref: '#/components/schemas/BenchmarkRequest'
   /poc/benchmark/{benchmarkId}:
     get:
       operationId: get_poc_benchmark_benchmarkId
@@ -1740,7 +1740,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericObject'
+                $ref: '#/components/schemas/BenchmarkRunResponse'
         '400':
           description: Invalid request
           content:
@@ -2352,6 +2352,117 @@ components:
             $ref: '#/components/schemas/Commitment'
         count:
           type: integer
+    BenchmarkRequest:
+      description: >-
+        A labelled corpus. Each case supplies the text (or a messageId already in the log) and what
+        a person says it means. Only `candidate` is required per case.
+      type: object
+      additionalProperties: false
+      required: [cases]
+      properties:
+        label:
+          type: string
+          maxLength: 128
+        cases:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/BenchmarkCase'
+    BenchmarkCase:
+      type: object
+      additionalProperties: false
+      properties:
+        reference:
+          description: How this case is named in the report, so a miss can be looked up.
+          type: string
+        text:
+          type: string
+        messageId:
+          description: Alternative to text; reads the wording from the message log.
+          type: string
+          format: uuid
+        messageTimestamp:
+          type: string
+          format: date-time
+        expected:
+          $ref: '#/components/schemas/BenchmarkExpectation'
+    BenchmarkExpectation:
+      type: object
+      additionalProperties: false
+      properties:
+        candidate:
+          type: boolean
+        shiftDate:
+          type: string
+          format: date
+        startTime:
+          type: string
+        endTime:
+          type: string
+        amount:
+          type: number
+        location:
+          type: string
+        city:
+          type: string
+        ambiguous:
+          description: True when a person could not read it either; the pipeline is right to hold it.
+          type: boolean
+    BenchmarkStartResponse:
+      type: object
+      additionalProperties: false
+      required: [benchmarkId, status, corpusSize, aiEnabled, startedAt]
+      properties:
+        benchmarkId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [RUNNING, COMPLETED, FAILED]
+        corpusSize:
+          type: integer
+        aiEnabled:
+          description: Recorded per run, because it changes what the numbers mean.
+          type: boolean
+        startedAt:
+          type: string
+          format: date-time
+    BenchmarkRunResponse:
+      description: >-
+        The run and, once it is over, its report. No GO/NO-GO verdict is computed: that decision is
+        a person's, and the report exists to inform it.
+      type: object
+      additionalProperties: true
+      required: [benchmarkId, status, corpusSize, aiEnabled, startedAt]
+      properties:
+        benchmarkId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [RUNNING, COMPLETED, FAILED]
+        label:
+          type: string
+          nullable: true
+        corpusSize:
+          type: integer
+        aiEnabled:
+          type: boolean
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        failure:
+          type: string
+          nullable: true
+        report:
+          type: object
+          additionalProperties: true
+          nullable: true
     GenericObject:
       type: object
       additionalProperties: true

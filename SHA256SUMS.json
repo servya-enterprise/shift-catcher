@@ -15,7 +15,7 @@
   "02-Architecture/Clara-Care-Reuse-Strategy.md": "94527db3c2555f0c23afeeef2adfb96d3c09ec612849baea36523da962300fb5",
   "02-Architecture/Error-Model.md": "2c7add55c986a174d389fc947efa5d215191f506caaafef466cbf109ca36c4cc",
   "02-Architecture/Latency-SLO.md": "1974a60b697840aa49529bd29117eab381f9407c69ab56d4e7f2520b0522fca8",
-  "02-Architecture/Module-Map.md": "088fc60ac6ed5ca4cdc2339d6c0d4f9670320e84f3868980b68889d61d19d8c8",
+  "02-Architecture/Module-Map.md": "5a5d588d8b517fe347c0b60edb257ecf4e10615f61847ce5b0488646ecf31278",
   "02-Architecture/Transactionality-and-Idempotency.md": "470d1c62921d25ac03f8fbab7b35050458b48e50237087270f95658e56493fec",
   "03-Integrations/Developer-Plan-Limits.md": "ce4296e309f02c9131eac8d4a5b4a85ee918155d5368224060e0fab1a06e75ab",
   "03-Integrations/Green-API-Contract.md": "9d872abda63be35e989cecb024ffce464ab46219c728ddeec0e7559ea9a7bc64",
@@ -33,7 +33,7 @@
   "06-API/OpenAPI-Conventions.md": "3f2b0c68a7f380139f7b932b6fc3fcaccc959a931919b8c4635ceea4271971a9",
   "07-AI/AI-Parser-Contract.md": "b27886f344b6a21041ea456ce8140db3790a8adbfd709bb192a91a9e2daa368b",
   "07-AI/Fallback-Policy.md": "c402d9913deb1fb2b9db8fa7dbbf0544716c7394314580c9f631a2df85e47cd8",
-  "08-Quality/Benchmark-Plan.md": "24a47f1d386acefc1a7d89cc97ba52ff8c46867f5a9ac2655b541d83c482097e",
+  "08-Quality/Benchmark-Plan.md": "a189aca01e727d86ca437a57a5d5d1e149e8c69289b8ea8a438a07d1bd176079",
   "08-Quality/POC-Acceptance-Test.md": "0a123e573efea68357feaa37da49a38fdb7dcd860825398fe7ba4209ba70f017",
   "08-Quality/Test-Strategy.md": "fce60a113826af42824a9821292d359dda1ddbf3e5b98c3de7c3124f7711c189",
   "09-Decisions/AUTODEC-TEMPLATE.md": "b860b5884beabece57b38735a1465a9183570018c44d1811ef81261bd6503faf",
@@ -44,7 +44,7 @@
   "09-Decisions/DEC-005-Fail-Safe-Auto-Claim.md": "08645790b910fc4f524c32f176cbdd3190ebb33adb52e87dea467d2b1b5b5768",
   "09-Decisions/DEC-006-Transactional-Outbox.md": "587a6e005dee7c0dbe9a34f819dd64780b8383e38ba9930b21e91d9a85f1294b",
   "10-Roadmap/Roadmap.md": "53e1b89828a2f4e74f9a2e5992ffeb1d811a4f1645f9199065b03aa9d8a28e69",
-  "10-Roadmap/endpoint-coverage.yaml": "9f59f201a2dc0074483385bc3ec80ba13f5d75f44677788149c07151c05dc080",
+  "10-Roadmap/endpoint-coverage.yaml": "31832fd070ca66255cc9e2025a21b9f656173060e6b03d4529eaea05e6c3a75f",
   "10-Roadmap/work-packages.yaml": "76e100b2d414a9d2b87ff4701eca4027973c35b85f90c8ad739659e5c030c5ae",
   "11-Handoff/Bootstrap-Prompt.md": "d193785466d1402d21ae2cd5c489ac6d369a886a1f3553ca44026bfd5de93d6a",
   "11-Handoff/Clara-Care-Reference-Policy.md": "96c322bee4aafc1928e4346223f664cefa794ad994a8488b6e45654825bc5b3a",
@@ -53,5 +53,5 @@
   "MANIFEST.json": "fb685863e2a76bcae77fa5d5fb4fca78803d774a25614c22006367331e25d58e",
   "PLANS.md": "e00f17c82e2f7fa5732d497a9d2d403a96ef951f226b7d79123fe486bb518a82",
   "README.md": "7737de5847c4d43ffacde995e3cc2f7ff64c1192124e2fb512d6e8759ed08419",
-  "openapi/poc-openapi.yaml": "3f2c6c2a2dabf7720aafdd31dc0bfac7199e5f5f0283fa178a215665ad87aa30"
+  "openapi/poc-openapi.yaml": "59c90ec161089749a24ca98bdd6c38dc182639c5e96b2082ed93ab08dcaf4b10"
 }

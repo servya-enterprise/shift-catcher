@@ -175,12 +175,12 @@ endpoints:
   method: POST
   path: /poc/benchmark/start
   work_package: WP-POC-008
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-036
   method: GET
   path: /poc/benchmark/{benchmarkId}
   work_package: WP-POC-008
-  status: SPECIFIED
+  status: IMPLEMENTED
 - id: EP-037
   method: POST
   path: /claims/{claimId}/retract

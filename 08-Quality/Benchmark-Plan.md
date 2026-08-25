@@ -23,3 +23,19 @@ Pass:
 - quote real confirmado.
 
 Reportar P50/P95/P99 + top outliers.
+
+## Harness
+
+`EP-035` inicia e `EP-036` devolve o relatório. O replay não persiste oportunidade nem claim e
+não envia mensagem: um benchmark que respondesse as ofertas medidas pegaria plantões de verdade
+num grupo de verdade.
+
+O relatório **não** emite o veredito. `08-Quality/POC-Acceptance-Test.md` termina em `GO`,
+`GO_WITH_LIMITATIONS` ou `NO_GO`, e essa decisão é de uma pessoa. Cada critério aparece como
+`MET`, `NOT_MET` ou `NOT_MEASURABLE_HERE` — os três que um replay não alcança (latência até
+provider-accepted, duplicidade sob concorrência, confirmação visual da citação) ficam listados
+e sem resposta, porque critério ausente de relatório se lê como critério atendido.
+
+O número que decide é `confidentlyWrong`: leituras sem nenhuma ambiguidade restante — que um
+rule set permissivo deixaria responder sozinho — que discordam do corpus. Cada uma é um `PEGO`
+enviado para um plantão que não era o que parecia.
