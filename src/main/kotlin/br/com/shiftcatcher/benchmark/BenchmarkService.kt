@@ -65,6 +65,12 @@ class BenchmarkService(
     fun start(request: BenchmarkRequest?): BenchmarkStartResponse {
         val cases = request?.cases?.takeIf { it.isNotEmpty() } ?: throw IllegalArgumentException("cases is required")
         require(cases.size <= MAX_CASES) { "a corpus of more than $MAX_CASES cases is not accepted" }
+        // No default. A run whose provenance was assumed is a run whose conclusion is unsafe.
+        val provenance =
+            request.provenance
+                ?: throw IllegalArgumentException(
+                    "provenance is required: say whether these are REAL messages, SYNTHETIC ones, or MIXED",
+                )
 
         // Resolved before the run starts so a corpus that references a message nobody has fails
         // immediately, with a readable error, instead of half-way through a run.
@@ -74,6 +80,7 @@ class BenchmarkService(
         val run =
             repository.start(
                 label = request.label?.take(MAX_LABEL),
+                provenance = provenance,
                 corpusSize = prepared.size,
                 aiEnabled = aiEnabled,
                 startedAt = clock.instant(),
@@ -84,10 +91,11 @@ class BenchmarkService(
                 message = "Only one benchmark runs at a time; wait for the current one to finish",
             )
 
-        executor.submit { execute(run.id, prepared) }
+        executor.submit { execute(run.id, prepared, provenance) }
         return BenchmarkStartResponse(
             benchmarkId = run.id.toString(),
             status = run.status,
+            provenance = run.provenance,
             corpusSize = run.corpusSize,
             aiEnabled = run.aiEnabled,
             startedAt = run.startedAt,
@@ -107,6 +115,7 @@ class BenchmarkService(
         return BenchmarkRunResponse(
             benchmarkId = run.id.toString(),
             status = run.status,
+            provenance = run.provenance,
             label = run.label,
             corpusSize = run.corpusSize,
             aiEnabled = run.aiEnabled,
@@ -120,10 +129,11 @@ class BenchmarkService(
     private fun execute(
         runId: UUID,
         cases: List<PreparedCase>,
+        provenance: CorpusProvenance,
     ) {
         runCatching {
             val scored = cases.map { score(it) }
-            val report = report(cases, scored)
+            val report = report(cases, scored, provenance)
             repository.complete(runId, objectMapper.writeValueAsString(report), clock.instant())
         }.onFailure { failure ->
             logger.error("Benchmark {} failed", runId, failure)
@@ -147,7 +157,8 @@ class BenchmarkService(
             autoClaimAllowed = autoClaimAllowed,
             aiInvoked = resolved?.aiInvoked ?: false,
             elapsedMs = elapsedMs,
-            wrongFields = wrongFields(case.expected, resolved),
+            contradicted = disagreements(case.expected, resolved, absent = false),
+            unread = disagreements(case.expected, resolved, absent = true),
         )
     }
 
@@ -205,29 +216,24 @@ class BenchmarkService(
             extractionCompletedAt = SYNTHETIC_MOMENT,
         )
 
-    /** Only fields the corpus actually asserts are compared; silence in a label is not a claim. */
-    private fun wrongFields(
+    /**
+     * Fields where the reading and the corpus part company. Only fields the corpus actually asserts
+     * are compared: silence in a label is not a claim about the message.
+     *
+     * [absent] selects which kind of parting: a value the pipeline never found, or a value it found
+     * and got wrong. Keeping them apart is the whole point - one is a gap, the other is a lie.
+     */
+    private fun disagreements(
         expected: BenchmarkExpectation?,
         resolved: ResolvedShift?,
+        absent: Boolean,
     ): List<String> {
         if (expected == null) return emptyList()
-        val wrong = mutableListOf<String>()
-
-        fun check(
-            name: String,
-            want: Any?,
-            got: Any?,
-        ) {
-            if (want == null) return
-            if (resolved == null || got == null || !matches(want, got)) wrong += name
+        return SCORED_FIELDS.filter { field ->
+            val want = expectedValue(expected, field) ?: return@filter false
+            val got = resolved?.let { resolvedValue(it, field) }
+            if (got == null) absent else !absent && !matches(want, got)
         }
-        check("shiftDate", expected.shiftDate, resolved?.shiftDate)
-        check("startTime", expected.startTime, resolved?.startTime)
-        check("endTime", expected.endTime, resolved?.endTime)
-        check("amount", expected.amount, resolved?.amount)
-        check("location", expected.location, resolved?.location)
-        check("city", expected.city, resolved?.city)
-        return wrong
     }
 
     private fun matches(
@@ -243,6 +249,7 @@ class BenchmarkService(
     private fun report(
         cases: List<PreparedCase>,
         scored: List<ScoredCase>,
+        provenance: CorpusProvenance,
     ): BenchmarkReport {
         val expectedCandidates = cases.count { it.expected?.candidate == true }
         val expectedAmbiguous = cases.count { it.expected?.ambiguous == true }
@@ -253,7 +260,8 @@ class BenchmarkService(
         val falsePositives = scored.count { it.case.expected?.candidate == false && it.candidate }
         val trueNegatives = scored.count { it.case.expected?.candidate == false && !it.candidate }
 
-        val confidentlyWrong = scored.count { it.autoClaimAllowed && it.wrongFields.isNotEmpty() }
+        val confidentlyWrong = scored.count { it.autoClaimAllowed && it.contradicted.isNotEmpty() }
+        val confidentlyIncomplete = scored.count { it.autoClaimAllowed && it.unread.isNotEmpty() }
         val autoWithAmbiguous =
             scored.count { it.autoClaimAllowed && (it.resolved?.ambiguousFields?.isNotEmpty() == true) }
         val ambiguousCases = scored.filter { it.case.expected?.ambiguous == true }
@@ -265,6 +273,8 @@ class BenchmarkService(
         return BenchmarkReport(
             corpus =
                 CorpusShape(
+                    provenance = provenance,
+                    admissibleAsGoEvidence = provenance == CorpusProvenance.REAL && shortfalls.isEmpty(),
                     size = cases.size,
                     expectedCandidates = expectedCandidates,
                     expectedStructured = expectedStructured,
@@ -291,6 +301,7 @@ class BenchmarkService(
                 SafetyScore(
                     autoClaimable = scored.count { it.autoClaimAllowed },
                     confidentlyWrong = confidentlyWrong,
+                    confidentlyIncomplete = confidentlyIncomplete,
                     autoClaimableWithAmbiguousField = autoWithAmbiguous,
                     ambiguousHeldForReview = heldForReview,
                     ambiguousAnsweredConfidently = ambiguousCases.size - heldForReview,
@@ -303,7 +314,8 @@ class BenchmarkService(
                     p99Ms = percentile(elapsed, PERCENTILE_99),
                     maxMs = elapsed.lastOrNull(),
                 ),
-            criteria = criteria(confidentlyWrong, autoWithAmbiguous, elapsed, shortfalls),
+            criteria =
+                criteria(confidentlyWrong, confidentlyIncomplete, autoWithAmbiguous, elapsed, shortfalls, provenance),
             misses = misses(scored),
             slowest =
                 scored
@@ -315,12 +327,27 @@ class BenchmarkService(
 
     private fun criteria(
         confidentlyWrong: Int,
+        confidentlyIncomplete: Int,
         autoWithAmbiguous: Int,
         elapsed: List<Long>,
         shortfalls: List<String>,
+        provenance: CorpusProvenance,
     ): List<CriterionOutcome> {
         val p95 = percentile(elapsed, PERCENTILE_95)
         return listOf(
+            CriterionOutcome(
+                criterion = "the corpus is the wording that really arrived",
+                outcome =
+                    if (provenance == CorpusProvenance.REAL) CriterionResult.MET else CriterionResult.NOT_MET,
+                detail =
+                    if (provenance == CorpusProvenance.REAL) {
+                        "real group messages"
+                    } else {
+                        "$provenance: invented messages can fail this system but cannot pass it, because " +
+                            "they measure the phrasings whoever wrote them thought of. Useful as a " +
+                            "regression floor and as a NO-GO detector; not admissible as GO evidence"
+                    },
+            ),
             CriterionOutcome(
                 criterion = "corpus meets the minimum of 08-Quality/Benchmark-Plan.md",
                 outcome = if (shortfalls.isEmpty()) CriterionResult.MET else CriterionResult.NOT_MET,
@@ -335,8 +362,10 @@ class BenchmarkService(
                 criterion = "nothing is answered confidently and wrongly",
                 outcome = if (confidentlyWrong == 0) CriterionResult.MET else CriterionResult.NOT_MET,
                 detail =
-                    "$confidentlyWrong reading(s) had no ambiguity left and still disagreed with the corpus; " +
-                        "each one is a PEGO sent for a shift that was not what it seemed",
+                    "$confidentlyWrong reading(s) had no ambiguity left and still contradicted the corpus; " +
+                        "each one is a PEGO sent for a shift that was not what it seemed. A further " +
+                        "$confidentlyIncomplete were unattended with a stated field left unread, which is " +
+                        "a gap rather than a lie - and stops being harmless once a rule depends on it",
             ),
             CriterionOutcome(
                 criterion = "internal pipeline P95 within the 1s budget",
@@ -379,9 +408,24 @@ class BenchmarkService(
                     if (expected?.candidate == false && case.candidate) {
                         add(CaseMiss(case.case.reference, "FALSE_ALARM", "flagged, but the corpus says it is not an offer"))
                     }
-                    if (case.wrongFields.isNotEmpty()) {
+                    if (case.contradicted.isNotEmpty()) {
                         val kind = if (case.autoClaimAllowed) "CONFIDENTLY_WRONG" else "MISREAD"
-                        add(CaseMiss(case.case.reference, kind, "disagreed on ${case.wrongFields.joinToString(", ")}"))
+                        add(
+                            CaseMiss(
+                                case.case.reference,
+                                kind,
+                                "contradicted the corpus on ${case.contradicted.joinToString(", ")}",
+                            ),
+                        )
+                    }
+                    if (case.unread.isNotEmpty()) {
+                        add(
+                            CaseMiss(
+                                case.case.reference,
+                                "UNREAD_FIELD",
+                                "never found ${case.unread.joinToString(", ")}, which the corpus states",
+                            ),
+                        )
                     }
                     if (expected?.ambiguous == true && case.resolved?.ambiguousFields?.isEmpty() == true) {
                         add(
@@ -398,11 +442,8 @@ class BenchmarkService(
     private fun fieldScores(scored: List<ScoredCase>): List<FieldScore> =
         SCORED_FIELDS.map { field ->
             val asserted = scored.filter { expectedValue(it.case.expected, field) != null }
-            val missing =
-                asserted.count { case ->
-                    case.resolved == null || resolvedValue(case.resolved, field) == null
-                }
-            val wrong = asserted.count { field in it.wrongFields } - missing
+            val missing = asserted.count { field in it.unread }
+            val wrong = asserted.count { field in it.contradicted }
             val correct = asserted.size - missing - wrong
             FieldScore(
                 field = field,
@@ -516,7 +557,10 @@ class BenchmarkService(
         val autoClaimAllowed: Boolean,
         val aiInvoked: Boolean,
         val elapsedMs: Long,
-        val wrongFields: List<String>,
+        /** Read, and different from what the corpus says. */
+        val contradicted: List<String>,
+        /** Stated by the corpus and never found. */
+        val unread: List<String>,
     )
 
     private companion object {

@@ -14,8 +14,31 @@ import java.time.LocalTime
  */
 data class BenchmarkRequest(
     val label: String? = null,
+    /**
+     * Required, with no default, because the answer decides what the run's numbers may be used for
+     * and nobody should be able to skip saying it.
+     */
+    val provenance: CorpusProvenance? = null,
     val cases: List<BenchmarkCase>? = null,
 )
+
+/**
+ * Where the wording came from.
+ *
+ * Invented messages can fail this system but cannot pass it: they measure the phrasings whoever
+ * wrote the corpus thought of, not how the people in that group actually write. A synthetic run is
+ * a regression floor and a NO-GO detector, never GO evidence.
+ */
+enum class CorpusProvenance {
+    /** Wording that really arrived in the group. The only kind a GO can rest on. */
+    REAL,
+
+    /** Written by hand to exercise the pipeline. */
+    SYNTHETIC,
+
+    /** Some of each - which means the whole run inherits the weaker claim. */
+    MIXED,
+}
 
 data class BenchmarkCase(
     /** How this case is named in the report, so a failure can be looked up in the corpus. */
@@ -48,6 +71,7 @@ data class BenchmarkExpectation(
 data class BenchmarkStartResponse(
     val benchmarkId: String,
     val status: BenchmarkStatus,
+    val provenance: CorpusProvenance,
     val corpusSize: Int,
     val aiEnabled: Boolean,
     val startedAt: Instant,
@@ -56,6 +80,7 @@ data class BenchmarkStartResponse(
 data class BenchmarkRunResponse(
     val benchmarkId: String,
     val status: BenchmarkStatus,
+    val provenance: CorpusProvenance,
     val label: String?,
     val corpusSize: Int,
     val aiEnabled: Boolean,
@@ -85,6 +110,9 @@ data class BenchmarkReport(
 
 /** Whether the corpus itself meets the minimum the plan demands. A thin corpus proves little. */
 data class CorpusShape(
+    val provenance: CorpusProvenance,
+    /** False for anything but a wholly real corpus. Shape alone never makes a corpus admissible. */
+    val admissibleAsGoEvidence: Boolean,
     val size: Int,
     val expectedCandidates: Int,
     val expectedStructured: Int,
@@ -118,15 +146,20 @@ data class FieldScore(
 )
 
 /**
- * The number the GO/NO-GO actually turns on.
+ * The numbers the GO/NO-GO actually turns on.
  *
- * `confidentlyWrong` counts messages the pipeline read with no ambiguity left - so a permissive rule
- * set would have let it answer on its own - and got a field wrong anyway. Every one of those is a
- * `PEGO` sent for a shift that was not what it seemed.
+ * Contradiction and absence are counted apart, because they are not the same danger and an early
+ * version of this report conflated them. `confidentlyWrong` is a reading that had no ambiguity left
+ * - a permissive rule set would have let it answer unattended - and *disagreed* with the corpus:
+ * a `PEGO` sent for a shift at the wrong hour. `confidentlyIncomplete` is the same unattended
+ * reading with a field the corpus states and the pipeline simply did not find. That is usually
+ * harmless, and is not harmless at all once a rule depends on the field it missed - `minAmount`
+ * cannot protect anyone from an amount that was never read.
  */
 data class SafetyScore(
     val autoClaimable: Int,
     val confidentlyWrong: Int,
+    val confidentlyIncomplete: Int,
     val autoClaimableWithAmbiguousField: Int,
     val ambiguousHeldForReview: Int,
     val ambiguousAnsweredConfidently: Int,

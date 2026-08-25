@@ -37,6 +37,20 @@
   under concurrency, visual confirmation of the quote) are listed as `NOT_MEASURABLE_HERE` rather
   than omitted. `BenchmarkScoringTest` 7/7 green locally with the real detector, extractor and rule
   engine; `BenchmarkIntegrationTest` is CI's.
+- A benchmark corpus must now declare its provenance (`REAL`, `SYNTHETIC`, `MIXED`), with no
+  default, and only `REAL` is admissible as GO evidence. `08-Quality/corpus/synthetic-v1.json` ships
+  100 invented messages as a regression floor and NO-GO detector, never as evidence.
+- Running that corpus against the real pipeline (AI off, no known locations) on 2026-08-25:
+  detection precision 0.87 / recall 0.92; date 32/35; hours 27/35 with **one contradiction**; amount
+  13/32 with 19 simply unread; and zero auto-claimable-while-ambiguous, so the `DEC-005` fail-safe
+  held across all hundred. Three structural findings are recorded in `08-Quality/corpus/README.md`:
+  amounts written without `R$` are not read, offers phrased without the word "plantão" are not
+  detected, and `das 7 ate as 19h` was read as different hours. **The parser was deliberately not
+  changed**: tuning it to invented text optimises for the corpus author's imagination, and altering
+  detection or extraction before `WP-POC-008` runs would move the gate's own baseline.
+- That run also exposed a defect in the harness itself, now fixed: `confidentlyWrong` counted an
+  unread field as a misreading. Contradiction and absence are separate numbers, because one is a gap
+  and the other is a lie. The uncorrected run reported 16 where the truth was 1.
 - `WP-POC-008` stays `READY`, not DONE: the harness exists, the run has not happened. It still needs
   the labelled corpus of `08-Quality/Benchmark-Plan.md` (100 messages, >=30 candidates, >=20
   structured, >=10 ambiguous), which the production log does not contain yet.

@@ -195,8 +195,52 @@ class BenchmarkScoringTest {
         assertEquals(2, report.slowest.size)
     }
 
+    @Test
+    fun `a corpus must say where it came from, and an invented one cannot support a GO`() {
+        val refused =
+            runCatching {
+                service.start(
+                    BenchmarkRequest(cases = listOf(BenchmarkCase(text = "Plantao 25/08 19-07"))),
+                )
+            }.exceptionOrNull()
+        assertTrue(refused is IllegalArgumentException, "provenance has no default, on purpose")
+
+        val report = run(BenchmarkCase(reference = "invented", text = "Plantao 25/08 19-07", expected = null))
+        assertEquals(CorpusProvenance.SYNTHETIC, report.corpus.provenance)
+        assertEquals(false, report.corpus.admissibleAsGoEvidence)
+        assertEquals(
+            CriterionResult.NOT_MET,
+            report.criteria.single { it.criterion.startsWith("the corpus is the wording") }.outcome,
+        )
+    }
+
+    /**
+     * The shipped corpus, all hundred of it, against the real pipeline.
+     *
+     * It asserts the invariant rather than the accuracy. Accuracy numbers from invented messages are
+     * not worth freezing - they only say how well the parser handles the phrasings whoever wrote the
+     * corpus imagined. The fail-safe is worth freezing: across a hundred varied messages, nothing
+     * that stayed ambiguous may ever become claimable without a human.
+     */
+    @Test
+    fun `across the whole corpus, nothing ambiguous is ever claimable unattended`() {
+        val corpus =
+            objectMapper.readValue(
+                java.io.File("08-Quality/corpus/synthetic-v1.json"),
+                BenchmarkRequest::class.java,
+            )
+        service.start(corpus)
+        val report = objectMapper.readValue(repository.awaitReport(), BenchmarkReport::class.java)
+
+        assertEquals(100, report.corpus.size)
+        assertEquals(0, report.safety.autoClaimableWithAmbiguousField)
+        assertEquals(false, report.corpus.admissibleAsGoEvidence, "invented messages cannot support a GO")
+    }
+
     private fun run(vararg cases: BenchmarkCase): BenchmarkReport {
-        service.start(BenchmarkRequest(label = "test", cases = cases.toList()))
+        service.start(
+            BenchmarkRequest(label = "test", provenance = CorpusProvenance.SYNTHETIC, cases = cases.toList()),
+        )
         val json = repository.awaitReport()
         return objectMapper.readValue(json, BenchmarkReport::class.java)
     }
@@ -213,6 +257,7 @@ class BenchmarkScoringTest {
 
         override fun start(
             label: String?,
+            provenance: CorpusProvenance,
             corpusSize: Int,
             aiEnabled: Boolean,
             startedAt: Instant,
@@ -221,6 +266,7 @@ class BenchmarkScoringTest {
                 id = UUID.randomUUID(),
                 status = BenchmarkStatus.RUNNING,
                 label = label,
+                provenance = provenance,
                 corpusSize = corpusSize,
                 aiEnabled = aiEnabled,
                 startedAt = startedAt,

@@ -20,6 +20,7 @@ class BenchmarkRepository(
     @Transactional
     fun start(
         label: String?,
+        provenance: CorpusProvenance,
         corpusSize: Int,
         aiEnabled: Boolean,
         startedAt: Instant,
@@ -29,6 +30,7 @@ class BenchmarkRepository(
                 INSERT_SQL,
                 ROW_MAPPER,
                 label,
+                provenance.name,
                 corpusSize,
                 aiEnabled,
                 Timestamp.from(startedAt),
@@ -71,15 +73,17 @@ class BenchmarkRepository(
 
         val SELECT_SQL =
             """
-            select id, status, label, corpus_size, ai_enabled, started_at, completed_at, failure, report
+            select id, status, label, provenance, corpus_size, ai_enabled, started_at, completed_at,
+                   failure, report
               from benchmark_run
             """.trimIndent()
 
         val INSERT_SQL =
             """
-            insert into benchmark_run (status, label, corpus_size, ai_enabled, started_at)
-            values ('RUNNING', ?, ?, ?, ?)
-            returning id, status, label, corpus_size, ai_enabled, started_at, completed_at, failure, report
+            insert into benchmark_run (status, label, provenance, corpus_size, ai_enabled, started_at)
+            values ('RUNNING', ?, ?, ?, ?, ?)
+            returning id, status, label, provenance, corpus_size, ai_enabled, started_at, completed_at,
+                      failure, report
             """.trimIndent()
 
         val ROW_MAPPER =
@@ -88,6 +92,7 @@ class BenchmarkRepository(
                     id = resultSet.getObject("id", UUID::class.java),
                     status = BenchmarkStatus.valueOf(resultSet.getString("status")),
                     label = resultSet.getString("label"),
+                    provenance = CorpusProvenance.valueOf(resultSet.getString("provenance")),
                     corpusSize = resultSet.getInt("corpus_size"),
                     aiEnabled = resultSet.getBoolean("ai_enabled"),
                     startedAt = resultSet.getTimestamp("started_at").toInstant(),
@@ -103,6 +108,7 @@ data class BenchmarkRun(
     val id: UUID,
     val status: BenchmarkStatus,
     val label: String?,
+    val provenance: CorpusProvenance,
     val corpusSize: Int,
     val aiEnabled: Boolean,
     val startedAt: Instant,

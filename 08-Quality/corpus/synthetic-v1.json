@@ -1,0 +1,967 @@
+{
+  "label": "synthetic-v1",
+  "provenance": "SYNTHETIC",
+  "_readme": [
+    "INVENTED MESSAGES. Not admissible as GO evidence, and the harness says so on every run.",
+    "These can fail the pipeline but cannot pass it: they measure the phrasings whoever wrote",
+    "them thought of, not how the people in that group actually write.",
+    "Use: a regression floor, and a NO-GO detector. Replace with real wording from the message",
+    "log as it accumulates - a case may carry messageId instead of text.",
+    "Location and city are deliberately not asserted: they depend on DETECTION_KNOWN_LOCATIONS",
+    "and DETECTION_KNOWN_CITIES, so scoring them would measure the deployment, not the parser."
+  ],
+  "cases": [
+    {
+      "reference": "offer-01",
+      "text": "Plantão das 7h às 19h no dia 25/08 na UPA Sul Marília",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-08-25",
+        "startTime": "07:00",
+        "endTime": "19:00"
+      }
+    },
+    {
+      "reference": "offer-02",
+      "text": "Passo plantão 26/08 19h às 7h, UPA Norte, R$ 1.400",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-08-26",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1400.0
+      }
+    },
+    {
+      "reference": "offer-03",
+      "text": "Alguém pega 27/08 das 07 às 13? PS Central. R$ 900",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-08-27",
+        "startTime": "07:00",
+        "endTime": "13:00",
+        "amount": 900.0
+      }
+    },
+    {
+      "reference": "offer-04",
+      "text": "URGENTE plantão amanhã 19-07 Santa Casa, 1200",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-08-25",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1200.0
+      }
+    },
+    {
+      "reference": "offer-05",
+      "text": "Vaga 28/08 noturno 19h/07h Marília 1.500,00",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-08-28",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1500.0
+      }
+    },
+    {
+      "reference": "offer-06",
+      "text": "tem plantão dia 29/08 das 13h as 19h, R$ 800",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-08-29",
+        "startTime": "13:00",
+        "endTime": "19:00",
+        "amount": 800.0
+      }
+    },
+    {
+      "reference": "offer-07",
+      "text": "Plantão 30/08 07:00 às 19:00 - UPA Zona Sul - R$1.300",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-08-30",
+        "startTime": "07:00",
+        "endTime": "19:00",
+        "amount": 1300.0
+      }
+    },
+    {
+      "reference": "offer-08",
+      "text": "31/08 das 19 as 7 alguém? paga 1400",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-08-31",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1400.0
+      }
+    },
+    {
+      "reference": "offer-09",
+      "text": "Plantao 01/09 7h-19h UPA, 1.100",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-01",
+        "startTime": "07:00",
+        "endTime": "19:00",
+        "amount": 1100.0
+      }
+    },
+    {
+      "reference": "offer-10",
+      "text": "Preciso passar meu plantão de 02/09, 19h às 07h. 1250",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-02",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1250.0
+      }
+    },
+    {
+      "reference": "offer-11",
+      "text": "plantao 03/09 das 7 ate as 19h - 1.000 reais",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-03",
+        "startTime": "07:00",
+        "endTime": "19:00",
+        "amount": 1000.0
+      }
+    },
+    {
+      "reference": "offer-12",
+      "text": "PLANTÃO 04/09 19H AS 7H R$1.600",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-04",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1600.0
+      }
+    },
+    {
+      "reference": "offer-13",
+      "text": "🚨 Plantão 06/09 19h-7h 1.450 🚨",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-06",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1450.0
+      }
+    },
+    {
+      "reference": "offer-14",
+      "text": "Passo plantão dia 07/09 das 07 às 19 - UPA Sul - 1200",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-07",
+        "startTime": "07:00",
+        "endTime": "19:00",
+        "amount": 1200.0
+      }
+    },
+    {
+      "reference": "offer-15",
+      "text": "Alguém cobre 08/09 13h às 19h? R$ 750",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-08",
+        "startTime": "13:00",
+        "endTime": "19:00",
+        "amount": 750.0
+      }
+    },
+    {
+      "reference": "offer-16",
+      "text": "plantão 09/09 das 19h as 07h, 1.350",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-09",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1350.0
+      }
+    },
+    {
+      "reference": "offer-17",
+      "text": "Vaga aberta 10/09 07h-13h, valor 700",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-10",
+        "startTime": "07:00",
+        "endTime": "13:00",
+        "amount": 700.0
+      }
+    },
+    {
+      "reference": "offer-18",
+      "text": "Tem plantão 11/09 noturno das 19 às 7, paga 1.500",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-11",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1500.0
+      }
+    },
+    {
+      "reference": "offer-19",
+      "text": "Plantão 12/09 07h às 19h — R$ 1.250,00",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-12",
+        "startTime": "07:00",
+        "endTime": "19:00",
+        "amount": 1250.0
+      }
+    },
+    {
+      "reference": "offer-20",
+      "text": "passo o plantão de 13/09, 19h/7h, 1400",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-13",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1400.0
+      }
+    },
+    {
+      "reference": "offer-21",
+      "text": "14/09 plantão diurno 07:00-19:00 R$ 1.200",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-14",
+        "startTime": "07:00",
+        "endTime": "19:00",
+        "amount": 1200.0
+      }
+    },
+    {
+      "reference": "offer-22",
+      "text": "Plantão dia 15/09 das 13 as 19, 800 reais",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-15",
+        "startTime": "13:00",
+        "endTime": "19:00",
+        "amount": 800.0
+      }
+    },
+    {
+      "reference": "offer-23",
+      "text": "alguem quer 16/09 das 19h as 07h? 1.550",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-16",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1550.0
+      }
+    },
+    {
+      "reference": "offer-24",
+      "text": "Plantão 17/09 7h-13h UPA Norte 720",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-17",
+        "startTime": "07:00",
+        "endTime": "13:00",
+        "amount": 720.0
+      }
+    },
+    {
+      "reference": "offer-25",
+      "text": "Passo 18/09 19-07, R$1.400",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-18",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1400.0
+      }
+    },
+    {
+      "reference": "offer-26",
+      "text": "Plantão amanhã das 07h às 19h, 1.150",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-08-25",
+        "startTime": "07:00",
+        "endTime": "19:00",
+        "amount": 1150.0
+      }
+    },
+    {
+      "reference": "offer-27",
+      "text": "Vaga hoje 19h às 7h - 1.600",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-08-24",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1600.0
+      }
+    },
+    {
+      "reference": "offer-28",
+      "text": "Plantão 19/09 das 07h30 às 19h30",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-19",
+        "startTime": "07:30",
+        "endTime": "19:30"
+      }
+    },
+    {
+      "reference": "offer-29",
+      "text": "20/09 das 19h às 07h, alguém?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-20",
+        "startTime": "19:00",
+        "endTime": "07:00"
+      }
+    },
+    {
+      "reference": "offer-30",
+      "text": "Plantão 21/09 08h as 20h R$ 1.300",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-21",
+        "startTime": "08:00",
+        "endTime": "20:00",
+        "amount": 1300.0
+      }
+    },
+    {
+      "reference": "offer-31",
+      "text": "tem vaga 22/09 das 7 as 19 - 1100",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-22",
+        "startTime": "07:00",
+        "endTime": "19:00",
+        "amount": 1100.0
+      }
+    },
+    {
+      "reference": "offer-32",
+      "text": "Plantão noturno 23/09 19h-07h 1.500",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-23",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1500.0
+      }
+    },
+    {
+      "reference": "offer-33",
+      "text": "Passo plantão 24/09 das 13h às 19h, 850",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-24",
+        "startTime": "13:00",
+        "endTime": "19:00",
+        "amount": 850.0
+      }
+    },
+    {
+      "reference": "offer-34",
+      "text": "Plantão 25/09 07h/19h - R$1.200",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-25",
+        "startTime": "07:00",
+        "endTime": "19:00",
+        "amount": 1200.0
+      }
+    },
+    {
+      "reference": "offer-35",
+      "text": "26/09 plantão 19 as 7, paga 1.450",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "shiftDate": "2026-09-26",
+        "startTime": "19:00",
+        "endTime": "07:00",
+        "amount": 1450.0
+      }
+    },
+    {
+      "reference": "vague-01",
+      "text": "tenho um plantão dia 30 pra passar, alguém interessado?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-02",
+      "text": "plantão sábado alguém?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-03",
+      "text": "passo plantão essa semana, chama no pv",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-04",
+      "text": "vaga de plantão, valor a combinar",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-05",
+      "text": "alguém quer pegar um plantão? paga bem",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-06",
+      "text": "tem plantão sobrando, me chama",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-07",
+      "text": "Plantão amanhã, horário a definir",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-08",
+      "text": "preciso passar meus plantões do mês",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-09",
+      "text": "alguém disponível pra cobrir um plantão?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-10",
+      "text": "plantão de 12h, dia a combinar",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-11",
+      "text": "tem vaga de plantao alguem quer",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-12",
+      "text": "Passo plantão, interessados chamar no privado",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-13",
+      "text": "sobrou plantão aqui, quem quer?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-14",
+      "text": "plantão na UPA, me chamem",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "vague-15",
+      "text": "alguém pega um plantão pra mim semana que vem?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": true,
+        "ambiguous": true
+      }
+    },
+    {
+      "reference": "chatter-01",
+      "text": "bom dia gente",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-02",
+      "text": "boa noite pessoal",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-03",
+      "text": "alguém sabe se o refeitório abre no feriado?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-04",
+      "text": "Parabéns Dra Ana!!! 🎉",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-05",
+      "text": "obrigada!!",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-06",
+      "text": "pego sim",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-07",
+      "text": "já foi",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-08",
+      "text": "fechou, obrigado",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-09",
+      "text": "alguém tem o contato do Dr Paulo?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-10",
+      "text": "o estacionamento tá fechado hoje",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-11",
+      "text": "reunião amanhã às 14h na sala 3",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-12",
+      "text": "prova do concurso dia 25/08 às 8h",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-13",
+      "text": "cadê todo mundo",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-14",
+      "text": "gente o sistema tá fora do ar",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-15",
+      "text": "confirmado",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-16",
+      "text": "bom plantão pra quem tá de plantão hoje 😴",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-17",
+      "text": "alguém viu meu estetoscópio?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-18",
+      "text": "o RH pediu pra entregar os documentos até 30/08",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-19",
+      "text": "curso de ACLS dia 12/09 das 8h às 18h, inscrições abertas",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-20",
+      "text": "vou chegar 15 min atrasada",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-21",
+      "text": "escala de setembro já saiu?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-22",
+      "text": "quem tá de plantão hoje?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-23",
+      "text": "boa tarde",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-24",
+      "text": "alguém sabe o ramal da farmácia?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-25",
+      "text": "feliz aniversário Dr Carlos!!",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-26",
+      "text": "a reunião foi remarcada pra 27/08 às 16h",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-27",
+      "text": "gente não esqueçam de assinar o ponto",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-28",
+      "text": "obrigado a todos pela cobertura ontem",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-29",
+      "text": "alguém consegue me ligar?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-30",
+      "text": "tô a caminho",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-31",
+      "text": "chegou o resultado do exame do leito 12",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-32",
+      "text": "o elevador tá em manutenção",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-33",
+      "text": "aviso: água será cortada dia 28/08 das 9h às 12h",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-34",
+      "text": "bom dia, alguém sabe se teve troca na escala?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-35",
+      "text": "vou almoçar, qualquer coisa me chamem",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-36",
+      "text": "tem café na copa",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-37",
+      "text": "pessoal, o wifi mudou a senha",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-38",
+      "text": "alguém pode me substituir na reunião de amanhã?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-39",
+      "text": "acabei de sair, tudo tranquilo",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-40",
+      "text": "kkkkk",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-41",
+      "text": "👍",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-42",
+      "text": "alguém sabe se vai ter treinamento esse mês?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-43",
+      "text": "o notebook da sala 2 sumiu",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-44",
+      "text": "gente chegou material novo",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-45",
+      "text": "boa sorte na prova!",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-46",
+      "text": "alguém tem plantão hoje na Santa Casa? só pra saber quem tá lá",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-47",
+      "text": "vou tirar férias em setembro",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-48",
+      "text": "a Dra Marina entrou de licença",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-49",
+      "text": "esqueci meu crachá, alguém me abre a porta?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    },
+    {
+      "reference": "chatter-50",
+      "text": "amanhã é feriado, escala normal?",
+      "messageTimestamp": "2026-08-24T12:00:00Z",
+      "expected": {
+        "candidate": false
+      }
+    }
+  ]
+}

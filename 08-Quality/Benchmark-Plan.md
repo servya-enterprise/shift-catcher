@@ -1,5 +1,13 @@
 # Benchmark Plan
 
+Procedência do corpus é obrigatória (`REAL`, `SYNTHETIC`, `MIXED`) e sem valor padrão, porque a
+resposta decide o que os números podem sustentar:
+
+> Um corpus inventado pode **reprovar** este sistema, mas não pode **aprová-lo.** Ele mede as formas
+> de escrever que quem o escreveu imaginou, não como as pessoas daquele grupo escrevem.
+
+Só `REAL` é admissível como evidência de `GO`. Ver `08-Quality/corpus/`.
+
 Dataset mínimo:
 - 100 mensagens;
 - >=30 candidates;
