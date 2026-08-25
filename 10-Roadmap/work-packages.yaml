@@ -210,7 +210,10 @@ work_packages:
     mesmos servicos em processo, entao nenhuma operacao entra em /api/v1 e o contrato continua em 42.
     Nenhum dado novo de dominio: 12-MVP/Frontend-Angular.md mapeia cada elemento de tela a um campo
     que ja existe ou e derivavel. O token de administracao nunca chega ao navegador. /console
-    continua servindo ate as rotas novas passarem nos gates, e so entao vira redirect.
+    continua servindo ate as rotas novas passarem nos gates, e so entao vira redirect. Angular 22.1,
+    Node 24.19.0, pnpm 11.19.0, Vitest - a versao e a do Clara Care (DEC-ARCH-015, FROZEN), porque os
+    tokens e componentes sao a primeira versao do design system dos dois produtos e sao copiados para
+    o workspace dele quando os apps existirem. Copia, nunca dependencia de build.
   endpoints: []
   acceptance:
   - a hostile group message renders as text, never as markup

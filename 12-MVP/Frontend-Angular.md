@@ -44,6 +44,12 @@ architectural cost, and it is what the design already assumes: no brand mark, no
 no footer, no global sign-out, because the host owns those. The module draws only its own five-tab
 internal navigation.
 
+It is also, today, the only reading that is available at all. The menu is not yet built: Clara Care's
+`backoffice` and `portal` are both untouched Angular CLI scaffolds with empty route arrays, so there
+is no shell to be framed by and no navigation to be added to. That does not weaken the decision, it
+dates it — the link is what the module offers, and the menu item is one line in an application that
+will exist later. What the two products share in the meantime is the design system, not the shell.
+
 ## The seam: a JSON front door, not new API
 
 The Angular application cannot call services in-process. It needs HTTP, and there are two ways to
@@ -119,6 +125,43 @@ to carry a checkbox anyway. The form now shows the derivation as feedback — *"
 The agenda form is the opposite case: `CreateAvailabilityRequest` **takes** `endsNextDay` explicitly,
 the controller already accepts the parameter, and `agenda.html` never rendered the checkbox. There
 the control is real and missing, and the Angular form adds it.
+
+## The shared design system
+
+The tokens and components below are **not Shift Catcher's alone**. Clara Care's
+`02-Architecture/Frontend-Architecture.md` already specifies "libs internas para design system"
+inside its Angular workspace, and as of 2026-08-25 that lib does not exist: `projects/backoffice` and
+`projects/portal` are both untouched `ng new` output, nine files each, with empty route arrays. There
+is no host application to plug into and no visual language to match — which makes this the cheapest
+moment there will ever be to decide that both products look like one company.
+
+So this is the first real exercise of a Servya design system, and Shift Catcher is where it gets
+proven against real screens rather than against a swatch page.
+
+**Copied now, extracted later.** The tokens and the nine components live in this project and are
+copied into Clara Care's workspace when its apps get built. Not a published package, not a Gradle
+dependency, not a submodule — a build dependency between the two repositories is exactly what
+`02-Architecture/Clara-Care-Reuse-Strategy.md` exists to prevent and `AUTODEC-0008` decision 1
+forbids. This is the same reasoning `12-MVP/Clara-Care-Integration.md` applied to the calendar
+package: a copy duplicates and drifts, but drifts slowly for something whose contract is a colour
+value, and costs nothing until a second consumer exists. When the duplication starts to hurt — which
+means when Clara Care's frontend is real — the shared piece is extracted into a lib that neither
+product owns.
+
+**The application is not shared.** Same look, separate apps, separate origins, separate sessions. The
+gate is authentication, not code: this project has a static admin token and one implicit operator,
+Clara Care has `tenant_id` with row level security, and `AUTODEC-0008` decision 7 already recorded
+that the two do not divide the world along the same line. Merging the UI would merge the sign-in by
+construction and decide the identity axis by accident, which is the specific mistake that document
+exists to prevent.
+
+Where the two already agree, they agree without having been made to, and that is the evidence they
+can share a visual layer safely: Problem Details for errors, session material in `HttpOnly` cookies,
+nothing sensitive in `localStorage`, typed reactive forms, signals for local state, WCAG AA as a
+practical gate. Where they differ is the seam that keeps them apart: Clara Care generates its API
+client from a frozen OpenAPI document and forbids hand-written DTOs, while this module's front door
+is deliberately outside `/api/v1` and outside any spec. One convention cannot serve both, and it does
+not have to.
 
 ## Design tokens
 
@@ -367,9 +410,18 @@ never assumes it owns the viewport — it may be a pane inside something else la
 
 ## Angular
 
-Angular 20, standalone components, signals for state, `ChangeDetectionStrategy.OnPush` everywhere,
-typed reactive forms, `provideHttpClient(withFetch())`. No component library: the design is nine
-components and a token file, and a library would cost more in overriding than it saves.
+Angular 22.1, standalone components, strict TypeScript, signals for state,
+`ChangeDetectionStrategy.OnPush` everywhere, typed reactive forms,
+`provideHttpClient(withFetch())`. Node 24.19.0, pnpm 11.19.0, Vitest.
+
+Those versions are not a preference. They are Clara Care's, pinned by its `DEC-ARCH-015` — ACCEPTED
+and FROZEN, and explicitly not revocable by an AUTODEC. Matching them is the whole cost of keeping a
+component set shareable: a component written against Angular 22 signals does not move to a workspace
+on 20 without being rewritten, and the version is the one thing about a shared design system that
+cannot be papered over later.
+
+No third-party component library. The design is nine components and a token file, and a library would
+cost more in overriding than it saves.
 
 ```
 src/app/

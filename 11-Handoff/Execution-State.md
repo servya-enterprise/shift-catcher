@@ -61,6 +61,25 @@
   keeps serving until the Angular routes pass their gates. `MANIFEST.json` and the validator summary
   go to 13 work packages; `Module-Map.md` gains `webapp`. No code, no contract change, no
   `WP-POC-008` verdict moves.
+- Checked rather than assumed, 2026-08-25: **Clara Care has no frontend yet.** Its workspace holds
+  `projects/backoffice` and `projects/portal`, both untouched `ng new` output — nine files each,
+  empty route arrays, default CLI README, no auth, no components. So there is no menu to be an option
+  in and no visual language to match. What exists is intent:
+  `02-Architecture/Frontend-Architecture.md` asks for "libs internas para design system", and
+  `DEC-ARCH-015` (ACCEPTED / FROZEN, not revocable by an AUTODEC) pins Angular 22 standalone with a
+  generated API client. `AUTODEC-0009` gained decisions 10-12 on that basis: the **visual layer is
+  shared and the application is not** — tokens and components are the first version of a design
+  system both products use, **copied** into Clara Care's workspace when its apps get built and
+  extracted into a lib only when the duplication hurts, never a package or build dependency; the
+  toolchain matches Clara Care's (Angular 22.1, Node 24.19.0, pnpm 11.19.0, Vitest) because a
+  component written against Angular 22 signals does not move to an older major without a rewrite; and
+  the generated-client convention does not cross, since this module's front door is deliberately
+  outside `/api/v1` and outside any spec while Clara Care forbids hand-written DTOs. The gate against
+  one merged application is **authentication**, not code: `AUTODEC-0008` decision 7 already recorded
+  that a static admin token and one implicit operator do not divide the world along the same line as
+  `tenant_id` with RLS, and merging the UI would settle that axis by accident. `12-MVP/Frontend-Angular.md`
+  was corrected from Angular 20 to 22.1 at the same time. No DEC is superseded and the contract stays
+  at 42.
 - Two defects in the existing console surfaced while specifying the port, both in error copy reaching
   the operator: a malformed amount raises `NumberFormatException` from
   `amount.replace(',', '.').toBigDecimal()` and `ConsoleController.act` prints the JDK message raw;

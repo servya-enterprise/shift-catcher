@@ -11,6 +11,15 @@ exists in either direction. It said nothing about the *user interface*, because 
 being proposed at the time. "An option in the Clara Care menu" is precisely the sentence that would
 decide that boundary by accident, in whichever way the first commit happened to work.
 
+One fact about the other side was checked rather than assumed, and it changes what the question even
+means: **Clara Care has no frontend yet.** Its workspace holds `projects/backoffice` and
+`projects/portal`, both untouched `ng new` output — nine files each, empty route arrays, the default
+CLI README, no authentication, no components. There is no menu to be an option in and no visual
+language to match. What does exist is intent: `02-Architecture/Frontend-Architecture.md` specifies
+"libs internas para design system" in that workspace, and `DEC-ARCH-015` (ACCEPTED / FROZEN, and
+explicitly not revocable by an AUTODEC) pins Angular 22 standalone with signals and a generated API
+client.
+
 ## Gap
 1. "In the Clara Care menu" has three technical readings — a link, an iframe, a federated module —
    and they differ by an architectural decision, not by an implementation detail. Nothing says which.
@@ -69,6 +78,25 @@ decide that boundary by accident, in whichever way the first commit happened to 
 9. **`/console` keeps serving until the Angular routes pass those gates**, then becomes a redirect.
    The Thymeleaf console is the only screen the operator has, and deleting it before its replacement
    works costs her the product.
+10. **The visual layer is shared; the application is not.** The tokens and components specified in
+    `12-MVP/Frontend-Angular.md` are the first exercise of a design system both products use, and
+    Clara Care's own architecture already asks for one. They are **copied** into Clara Care's
+    workspace when its apps get built — never a published package, a Gradle dependency or a
+    submodule, because a build dependency between the repositories is the thing
+    `Clara-Care-Reuse-Strategy.md` and `AUTODEC-0008` decision 1 forbid. The extraction into a lib
+    neither product owns happens when the duplication starts to hurt, which is when Clara Care's
+    frontend is real. Same reasoning `12-MVP/Clara-Care-Integration.md` applied to the calendar
+    package, applied to something whose contract is a colour value.
+11. **The toolchain matches Clara Care's**: Angular 22.1, standalone, strict, signals, Node 24.19.0,
+    pnpm 11.19.0, Vitest. Not a preference — `DEC-ARCH-015` is FROZEN on the other side, and a
+    component written against Angular 22 signals does not move into a workspace on an older major
+    without being rewritten. The version is the one thing about a shared design system that cannot be
+    reconciled after the fact.
+12. **The generated-client convention does not cross.** Clara Care forbids hand-written DTOs and
+    generates its client from a frozen OpenAPI document. This module's front door is deliberately
+    outside `/api/v1` and outside any spec, so its client is written by hand. That difference is a
+    reason the two stay separate applications rather than a defect in either: one convention cannot
+    serve both, and it does not have to.
 
 ## Rationale
 Decision 3 is the load-bearing one. Widening `/api/v1` to accept a browser session would put session
@@ -88,11 +116,13 @@ were consequences of Thymeleaf. A reader of the new code would find no trace of 
 symptom of losing one is a duplicate `PEGO` in a group of colleagues.
 
 ## Reversibility
-- HIGH: 2, 4, 7 — chrome, a document, a lint rule.
-- MEDIUM: 1, 3, 5, 9 — each becomes a migration of habit and a controller, not of data. Decision 1
-  upgrades to an iframe by changing cookie and CSP policy deliberately.
-- LOW: 6 — a shared sign-in, once operators exist on both sides, is an identity migration and an
-  authorisation review, not an edit.
+- HIGH: 2, 4, 7, 10 — chrome, a document, a lint rule, and a copy that is still a copy.
+- MEDIUM: 1, 3, 5, 9, 12 — each becomes a migration of habit and a controller, not of data.
+  Decision 1 upgrades to an iframe by changing cookie and CSP policy deliberately.
+- LOW: 6, 11 — a shared sign-in, once operators exist on both sides, is an identity migration and an
+  authorisation review rather than an edit; and a major-version mismatch between the two workspaces
+  turns every shared component into a rewrite, which is why 11 is decided now and not when the first
+  component is copied.
 
 ## Impact
 No code changes and no contract changes from this document. `00-Start/POC-Freeze.md` is untouched,
@@ -116,9 +146,14 @@ gains the `webapp` module.
 - `06-API/Endpoint-Catalog.md` — the 42-operation baseline and the existing note that `/console`
   deliberately adds none.
 - `09-Decisions/AUTODEC-0008-Clara-Care-Integration-Boundary.md` — the data boundary this extends to
-  the interface.
+  the interface, and decision 7's identity axis, which a merged UI would settle by accident.
 - `12-MVP/Clara-Care-Integration.md` — the admin token and console sessions as the two things a
-  shared sign-in would have to change first.
+  shared sign-in would have to change first, and the extractable-not-yet-extracted reasoning that
+  decision 10 reuses.
+- Clara Care baseline, read 2026-08-25: `frontend/projects/backoffice` and `frontend/projects/portal`
+  as untouched CLI scaffolds; `02-Architecture/Frontend-Architecture.md` asking for design-system
+  libs; `09-Decisions/DEC-ARCH-015-Angular.md` freezing Angular 22 standalone with a generated
+  client; and `.claude/skills/frontend-angular/SKILL.md` forbidding hand-written DTOs.
 
 ## Status
 ACTIVE
