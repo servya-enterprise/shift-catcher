@@ -276,7 +276,8 @@ Below that nothing is tappable. She uses this on a phone, often one-handed, ofte
 | `sc-offer-card` | `go`, `wait`, `idle` | `offer`, `busy` | Rail colour by tone. `go` gets *Pegar*; `wait` gets *Conferir*; `idle` renders as a compact row, not a card. |
 | `sc-closed-row` | — | `window`, `reason` | One line. Everything encerrada collapses to this. |
 | `sc-badge` | `go`, `wait`, `stop`, `idle` | `label` | Only where sections do not group — Respostas and the detail. In a grouped list it is redundant and omitted. |
-| `sc-button` | `go`, `check`, `quiet`, `danger`, `bare` | `busy`, `disabled` | `busy` shows a spinner, keeps the label, and blocks re-entry. |
+| `sc-button` | `go`, `check`, `quiet`, `danger`, `bare` | `busy`, `disabled` | `busy` spins, switches the label to the gerund (*Pegar* → *Pegando*) and blocks re-entry from the first tap. `disabled` is a rule saying no, and no tap will change it — a different thing, drawn differently. `min-height: 46px`, `44px` for `bare`. |
+| `sc-banner` | `wait`, `stop` | `title`, `detail`, `actions` | Sits above the content it concerns and never replaces it: she keeps seeing the list, she just cannot act on it. `wait` for an outcome that is the product working — someone claimed first, the offer moved under her. `stop` only for an effect that did not happen. |
 | `sc-field` | `text`, `time`, `date`, `money` | `control`, `label`, `hint`, `derived` | Error under the field it belongs to. `derived` is the green counterpart: what the system concluded from what she typed. |
 | `sc-empty` | `quiet`, `problem` | `title`, `detail`, `action` | Never a bare "nada aqui". |
 | `sc-skeleton` | `card`, `row` | `count` | The shape and height of the real card, so nothing jumps on arrival. |
@@ -403,7 +404,7 @@ is a way to send a real WhatsApp message by accident.
 |---|---|
 | `< 768px` | Single column, 16px gutters. The design target — she uses this on a phone. |
 | `768–1023px` | Single column capped at 560px, centred. Cards do not stretch; a 900px-wide offer card is harder to scan, not easier. |
-| `≥ 1024px` | Two panes: a 400px list rail and a detail pane. Selecting a card fills the pane rather than navigating. `/ofertas/:id` still resolves standalone, for a link opened cold. |
+| `≥ 1024px` | Two panes: a 400px list rail and a detail pane. Selecting a card fills the pane rather than navigating. `/ofertas/:id` still resolves standalone, for a link opened cold. The internal nav is the only component that changes shape rather than just reflowing: `gap` 14→20px, gutters 16→24px, label 13→13.5px. Everything else — card, button, field, badge, rail — is one definition at every width. |
 
 The module never sets a page background outside its own root, never uses `position: fixed`, and
 never assumes it owns the viewport — it may be a pane inside something else later.
