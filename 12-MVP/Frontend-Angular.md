@@ -169,23 +169,28 @@ Copy verbatim into `styles/tokens.css`. Names are the contract; no component may
 colour. The light block defines the complete palette; dark redefines the same names, so no component
 knows two palettes — it knows one, with two values.
 
+Every value is **measured, not estimated**: converted from oklch to sRGB and run through a WCAG
+contrast calculation, both themes, by `scripts/verify_design_tokens.mjs`. The hex in each comment is
+what a browser actually paints, so the numbers can be checked without trusting this document.
+
 ```css
 :root {
-  --sc-ground:     oklch(97.2% 0.004 245);
-  --sc-surface:    oklch(100%  0     0);
-  --sc-line:       oklch(90%   0.006 245);
-  --sc-line-soft:  oklch(94%   0.005 245);
-  --sc-ink:        oklch(24%   0.015 250);
-  --sc-ink-2:      oklch(41%   0.013 250);
-  --sc-muted:      oklch(55%   0.011 250);
-  --sc-go:         oklch(50%   0.13  155);
-  --sc-go-ink:     oklch(99%   0     0);
-  --sc-go-tint:    oklch(95%   0.035 155);
-  --sc-wait:       oklch(52%   0.12  66);
-  --sc-wait-tint:  oklch(95%   0.05  78);
-  --sc-stop:       oklch(52%   0.16  27);
-  --sc-stop-tint:  oklch(95%   0.04  27);
-  --sc-idle:       oklch(78%   0.006 250);
+  --sc-ground:      oklch(97.2% 0.004 245);  /* #F4F6F8 */
+  --sc-surface:     oklch(100%  0     0);    /* #FFFFFF */
+  --sc-line:        oklch(90%   0.006 245);  /* #DBDEE2  separation only */
+  --sc-line-soft:   oklch(94%   0.005 245);  /* #E8EBEE */
+  --sc-line-strong: oklch(63.6% 0.008 245);  /* #878C90  control boundaries */
+  --sc-ink:         oklch(24%   0.015 250);  /* #1A2026 */
+  --sc-ink-2:       oklch(41%   0.013 250);  /* #454B51 */
+  --sc-muted:       oklch(54.4% 0.011 250);  /* #6B7076 */
+  --sc-go:          oklch(50%   0.119 155);  /* #0E7644 */
+  --sc-go-ink:      oklch(99%   0     0);    /* #FCFCFC */
+  --sc-go-tint:     oklch(95%   0.035 155);  /* #DDF6E4 */
+  --sc-wait:        oklch(52%   0.111 66);   /* #935A0D */
+  --sc-wait-tint:   oklch(95%   0.042 78);   /* #FEECD0 */
+  --sc-stop:        oklch(52%   0.16  27);   /* #B33832 */
+  --sc-stop-tint:   oklch(95%   0.024 27);   /* #FEE9E6 */
+  --sc-idle:        oklch(65.8% 0.008 250);  /* #8E9296 */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -194,14 +199,25 @@ knows two palettes — it knows one, with two values.
 :root[data-sc-theme="dark"] { /* the same dark values */ }
 ```
 
-Dark values: `--sc-ground: oklch(17.5% 0.01 250)`, `--sc-surface: oklch(21.5% 0.012 250)`,
-`--sc-line: oklch(30% 0.014 250)`, `--sc-line-soft: oklch(25% 0.012 250)`,
-`--sc-ink: oklch(95% 0.005 250)`, `--sc-ink-2: oklch(80% 0.008 250)`,
-`--sc-muted: oklch(66% 0.013 250)`, `--sc-go: oklch(74% 0.15 155)`,
-`--sc-go-ink: oklch(16% 0.03 155)`, `--sc-go-tint: oklch(27% 0.055 155)`,
-`--sc-wait: oklch(80% 0.13 78)`, `--sc-wait-tint: oklch(28% 0.055 78)`,
-`--sc-stop: oklch(72% 0.15 27)`, `--sc-stop-tint: oklch(27% 0.06 27)`,
-`--sc-idle: oklch(42% 0.01 250)`.
+Dark values: `--sc-ground: oklch(17.5% 0.01 250)` `#0D1115`, `--sc-surface: oklch(21.5% 0.012 250)`
+`#151A1F`, `--sc-line: oklch(30% 0.014 250)` `#292E35`, `--sc-line-soft: oklch(25% 0.012 250)`
+`#1D2227`, `--sc-line-strong: oklch(51.6% 0.014 250)` `#626970`, `--sc-ink: oklch(95% 0.005 250)`
+`#ECEFF2`, `--sc-ink-2: oklch(80% 0.008 250)` `#BABEC3`, `--sc-muted: oklch(66% 0.013 250)`
+`#8C939A`, `--sc-go: oklch(74% 0.15 155)` `#4BC680`, `--sc-go-ink: oklch(16% 0.03 155)` `#031108`,
+`--sc-go-tint: oklch(27% 0.055 155)` `#0B2E1A`, `--sc-wait: oklch(80% 0.13 78)` `#EBB353`,
+`--sc-wait-tint: oklch(28% 0.055 78)` `#382503`, `--sc-stop: oklch(72% 0.15 27)` `#F47C70`,
+`--sc-stop-tint: oklch(27% 0.06 27)` `#3F1916`, `--sc-idle: oklch(51.4% 0.01 250)` `#63686D`.
+
+**Two line tokens, because a border does two different jobs.** `--sc-line` separates a card from the
+page; it is decorative and may be as quiet as it likes. `--sc-line-strong` is the *boundary of a
+control* — the edge of an input, of an outlined button, of an unfilled badge. WCAG 1.4.11 asks 3:1
+for that, and the single soft line the first draft used measures **1.35:1**: a field whose only edge
+is invisible. Never put `--sc-line` on something a person is meant to click or type into.
+
+Nothing here sits outside sRGB. An out-of-gamut oklch value is silently clipped by the browser, so
+the colour that ships stops being the colour that was specified and its measured contrast stops being
+true. Four tokens in the first draft were clipped that way, `--sc-stop-tint` worst of all — its
+chroma had to come down from `0.04` to `0.024` to be real.
 
 Three tokens carry the whole semantic load, and each has exactly one meaning across all six screens:
 
@@ -394,9 +410,12 @@ never assumes it owns the viewport — it may be a pane inside something else la
 
 ## Accessibility
 
-- Contrast: every pair in the token table clears 4.5:1 for body text and 3:1 for the rails and
-  borders, in both themes. The rails carry a redundant label, never colour alone — a `3px` green
-  border is a hint, the section title is the fact.
+- Contrast: **44 pairs measured across both themes, zero failures.**
+  `scripts/verify_design_tokens.mjs` is the gate and exits non-zero, so this is a build step rather
+  than a promise — the first draft of these tokens failed seven of those pairs while the document
+  claimed they all passed. Body text clears 4.5:1; control boundaries and status rails clear 3:1.
+  The rails also carry a redundant label, never colour alone: a `3px` green border is a hint, the
+  section title is the fact.
 - Focus: visible ring on every interactive element, `2px` `--sc-go` offset `2px`. Never
   `outline: none`.
 - Order: nav → pulse → sections in visual order → cards in visual order → actions within a card.
