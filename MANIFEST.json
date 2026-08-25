@@ -4,12 +4,20 @@
   "generated_at": "2026-08-20",
   "type": "poc-implementation-in-progress",
   "completed_work_packages": [
-    "WP-POC-001"
+    "WP-POC-001",
+    "WP-POC-002",
+    "WP-POC-003",
+    "WP-POC-004",
+    "WP-POC-005",
+    "WP-POC-006",
+    "WP-POC-007",
+    "WP-MVP-001",
+    "WP-MVP-002"
   ],
-  "current_work_package": "WP-POC-002",
-  "green_api_transport_gate": "NOT_VERIFIED",
+  "current_work_package": "WP-POC-008",
+  "green_api_transport_gate": "VERIFIED",
   "endpoint_count": 42,
-  "work_package_count": 10,
+  "work_package_count": 12,
   "green_api_plan": "Developer",
   "recommended_repository": "separate from Clara Care"
 }

@@ -7,6 +7,11 @@ about shape before the work starts, because the shape is the whole point: this i
 than one project, so the thing to build is a service that speaks calendars, not a feature that
 speaks shifts.
 
+That second project now has a name and a shape, and both constrain what is written here.
+`12-MVP/Clara-Care-Integration.md` records it, and `09-Decisions/AUTODEC-0008-Clara-Care-Integration-Boundary.md`
+turns the parts that bind this document into decisions. Two of them change what follows outright:
+the read side takes free/busy rather than events, and the mirror stores windows rather than words.
+
 ## What it is for
 
 Two different jobs, and they are worth naming separately because only one of them is obvious.
@@ -61,14 +66,39 @@ shift is, what a claim is, or what `PEGO` means. Concretely, the port it exposes
 
 ```text
 CalendarPort
-  listEvents(calendarId, from, to): List<CalendarEvent>
+  busyWindows(calendarId, from, to): List<BusyWindow>
+  listEvents(calendarId, from, to, syncToken?): EventPage
   createEvent(calendarId, CalendarEvent): CalendarEventRef
   updateEvent(ref, CalendarEvent): CalendarEventRef
   deleteEvent(ref)
+  watch(calendarId, callbackUrl): ChannelRef
+  renewWatch(ChannelRef): ChannelRef
+  stopWatch(ChannelRef)
+  connect(consentGrant): CredentialRef
+  refresh(CredentialRef): CredentialRef
+  revoke(CredentialRef)
 ```
 
-and `CalendarEvent` carries a title, a time window, a location, a description and an external
-correlation key — nothing domain-specific. Shift Catcher's job is to translate a `ShiftClaim` into
+The first four operations were the original proposal, and they are the shape a shift-claim *writer*
+needs. The rest are what the second consumer cannot work without, and each answers something Clara
+Care already has in code or in its baseline: `busyWindows` because the read side must never receive
+titles; `syncToken` because re-reading a window on a schedule neither scales nor notices a deletion;
+the watch trio because its webhook ingress already carries a channel route with `resourceId`, token
+hash and expiry; and the credential trio because a refresh token is hers, expires, and can be
+revoked — which the port has to be able to say out loud, not merely fail at.
+
+`CalendarEvent` carries a time window, a title, a location, a description and
+`extendedProperties.private` holding both an external correlation key and a **`source` marker**.
+The marker is not decoration. Two systems writing into one calendar without it means this one reads
+the shift it just created as an external commitment conflicting with itself, and the other reads a
+shift as an unexplained external change. One field, two symmetric bugs that would both present as
+data problems rather than design ones.
+
+`BusyWindow` carries a start, an end and nothing else — that is the entire point of it.
+
+The time zone travels inside the event rather than being read from configuration. This project pins
+`America/Sao_Paulo` in `ShiftCatcherProperties`; Clara Care resolves a zone per tenant and
+practitioner. A shared library that reads its host's config is not shared. Shift Catcher's job is to translate a `ShiftClaim` into
 that shape and a `CalendarEvent` into a `Commitment`; the calendar service's job is to talk to
 Google. Two adapters, one on each side of a boundary that neither crosses.
 
@@ -108,9 +138,20 @@ natural external key.
 remote event has exactly the failure mode the retraction code already handles: the provider can
 refuse, and the record must survive the report of that refusal.
 
-**LGPD.** Reading her calendar means storing third parties' appointments — the same category of
-exposure `MVP-Scope.md` already flags for group messages, applied to a more intimate source. A
-dedicated calendar limits it; a retention policy is not optional at this point.
+**LGPD, and the leak a dedicated calendar does not close.** Reading her calendar means storing
+third parties' appointments — the same category of exposure `MVP-Scope.md` already flags for group
+messages, applied to a more intimate source. A dedicated calendar limits that, and a retention
+policy is not optional at this point.
+
+But a dedicated calendar limits the exposure to *her* private life, and there is a second one it
+does nothing about. Clara Care writes its appointments into her calendar, and those events are
+titled with a **patient's name**. Mirroring events into local rows — exactly what this document
+specifies, for good latency reasons — would move patient data into a database whose
+`01-Product/Non-Goals.md` forbids it, through a seam designed for something else, without anybody
+deciding to. Hence the two rules from `AUTODEC-0008`: the adapter asks for **free/busy rather than
+events**, so the words never arrive; and the **mirror schema has no column for a title**, so no
+later code path can put one there. Both are free before the adapter is written and archaeology
+afterwards.
 
 ## Where it belongs in the order
 

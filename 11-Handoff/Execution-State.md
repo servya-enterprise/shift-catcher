@@ -28,6 +28,24 @@
   every page and asserts that a hostile group message is escaped rather than executed.
 - `12-MVP/Calendar-Integration.md`: Google Calendar recorded as a future feature, deliberately
   shaped as a generic calendar service reused by another project. Nothing implemented.
+- The second project is now named and its constraints recorded: `12-MVP/Clara-Care-Integration.md`
+  (PROPOSED) and `09-Decisions/AUTODEC-0008-Clara-Care-Integration-Boundary.md` (ACTIVE). The
+  integration is the **calendar and nothing else** — one busy window crosses, no runtime dependency
+  in either direction. Two decisions are urgent rather than tidy: Clara Care titles its calendar
+  events with a **patient's name**, so mirroring events as `12-MVP/Calendar-Integration.md` proposed
+  would import patient data into this database through a seam built for something else. The read
+  side therefore takes **free/busy, not events**, and the mirror **stores windows, not words**. Both
+  are free now and archaeology once rows exist. Also decided: an event `source` marker in
+  `extendedProperties.private` (without it each system reads the other's writes as unexplained
+  conflicts, and its own as a conflict with itself); an architecture test forbidding the calendar
+  package from importing this domain, so extraction stays a move rather than a rewrite; this
+  project's own `operator_id` rather than Clara Care's `tenant_id`, since the two do not divide the
+  world along the same line; and the GREEN-API number never being the clinic's Cloud API line. The
+  group claim path cannot migrate to the official API at all — it does not read group messages.
+  `12-MVP/Calendar-Integration.md` was amended with the widened port and the mirror rule.
+  `WP-MVP-003` (calendar write) and `WP-MVP-004` (calendar read) are `PLANNED`, no endpoints, so the
+  contract stays at 42; `MANIFEST.json` and the validator summary go to 12 work packages. No code,
+  no contract change, and no `WP-POC-008` verdict moves.
 - `EP-035`/`EP-036` are now IMPLEMENTED (`benchmark` module, migration `V11`). They had been
   SPECIFIED since the baseline, which meant `WP-POC-008` had no harness and could not have run even
   with a corpus in hand - the earlier note that it "needs corpus and time in the group, not code"

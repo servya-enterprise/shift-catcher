@@ -45,13 +45,13 @@
   "09-Decisions/DEC-006-Transactional-Outbox.md": "587a6e005dee7c0dbe9a34f819dd64780b8383e38ba9930b21e91d9a85f1294b",
   "10-Roadmap/Roadmap.md": "53e1b89828a2f4e74f9a2e5992ffeb1d811a4f1645f9199065b03aa9d8a28e69",
   "10-Roadmap/endpoint-coverage.yaml": "31832fd070ca66255cc9e2025a21b9f656173060e6b03d4529eaea05e6c3a75f",
-  "10-Roadmap/work-packages.yaml": "76e100b2d414a9d2b87ff4701eca4027973c35b85f90c8ad739659e5c030c5ae",
+  "10-Roadmap/work-packages.yaml": "fdf2d8fe5251d211307c1069923573663cb2616a6abff7a72eb8a2e1a7dfdc65",
   "11-Handoff/Bootstrap-Prompt.md": "d193785466d1402d21ae2cd5c489ac6d369a886a1f3553ca44026bfd5de93d6a",
   "11-Handoff/Clara-Care-Reference-Policy.md": "96c322bee4aafc1928e4346223f664cefa794ad994a8488b6e45654825bc5b3a",
   "11-Handoff/POC-Setup-Checklist.md": "dc595a15f3525dbe370c6a5204a022f7ddc436d4a8d4ba283f773304a2998476",
   "AGENTS.md": "32e3b9707525c18d7c45cc427f827b631956ed517538d0a0ca5fe32bb839da54",
-  "MANIFEST.json": "fb685863e2a76bcae77fa5d5fb4fca78803d774a25614c22006367331e25d58e",
+  "MANIFEST.json": "9f834fa0a88a8f6198851877e831709373611a65e79908e13de773fc78a1aa64",
   "PLANS.md": "e00f17c82e2f7fa5732d497a9d2d403a96ef951f226b7d79123fe486bb518a82",
-  "README.md": "7737de5847c4d43ffacde995e3cc2f7ff64c1192124e2fb512d6e8759ed08419",
+  "README.md": "65321aa6dfcac2e3f73ae799a1b1d95aabe4a5da7536ef8ddf2f651635153177",
   "openapi/poc-openapi.yaml": "41e0f2779cffe9c13c00ea1222a07363a41a60eadcc800fcba0293146ca5e159"
 }

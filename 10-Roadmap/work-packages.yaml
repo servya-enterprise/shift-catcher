@@ -160,3 +160,40 @@ work_packages:
   - third-party text is escaped, never markup
   - state-changing posts need the session token
   - reload never re-claims a shift
+- id: WP-MVP-003
+  title: Generic calendar service & claimed shift write
+  status: PLANNED
+  depends_on:
+  - WP-MVP-002
+  goal: >-
+    O lado de escrita de 12-MVP/Calendar-Integration.md, com a fronteira de
+    09-Decisions/AUTODEC-0008-Clara-Care-Integration-Boundary.md. Pacote de calendario que nao
+    importa este dominio, verificado por teste de arquitetura; plantao pego vira evento com
+    extendedProperties.private carregando chave de correlacao e marcador de origem; segundo tipo de
+    evento no outbox por migration. Falha de calendario nunca derruba o claim, e os dois nunca sao
+    uma transacao so. Nenhum endpoint novo: qualquer operacao HTTP que este pacote precise entra com
+    catalogo, OpenAPI, cobertura e checksums no mesmo commit.
+  endpoints: []
+  acceptance:
+  - calendar package imports nothing from this domain
+  - retried outbox event creates no second calendar entry
+  - failed calendar write leaves the claim intact
+  - retraction removes the event, and a refused removal survives being reported
+- id: WP-MVP-004
+  title: Calendar as a commitment source
+  status: PLANNED
+  depends_on:
+  - WP-MVP-003
+  goal: >-
+    O lado de leitura: terceiro bean de CommitmentSourcePort, sem tocar em rules nem em
+    AvailabilityService. Le free/busy, nunca events, e espelha janelas em vez de palavras -
+    AUTODEC-0008 decisoes 2 e 3, que existem para impedir que appointment clinico do Clara Care
+    entre neste banco. Sync incremental, watch channel e ciclo de vida da credencial (consent,
+    refresh, revoke) com sinal explicito de conexao quebrada visivel no console. Nunca no caminho
+    sincrono de avaliacao. Nenhum endpoint novo pelas mesmas razoes do WP-MVP-003.
+  endpoints: []
+  acceptance:
+  - evaluation path performs no network call
+  - mirror schema has no column able to hold an event title
+  - events this system wrote are ignored as commitments
+  - a broken connection is visible rather than silently empty

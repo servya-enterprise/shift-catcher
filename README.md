@@ -4,14 +4,25 @@ POC independente e de baixa latência para monitorar até três grupos do WhatsA
 
 > [!important]
 > Este projeto **não faz parte do Clara Care** e não deve ser adicionado ao roadmap, baseline, módulos ou banco do Clara Care. Ele reutiliza apenas **padrões de engenharia** que funcionaram bem naquele projeto.
+>
+> A fronteira de uma integração futura — o que pode atravessar, o que nunca pode, e por quê — está em [[12-MVP/Clara-Care-Integration]], com as regras em [[09-Decisions/AUTODEC-0008-Clara-Care-Integration-Boundary]]. Nada nela está implementado.
 
 As especificações congeladas começam em [[00-Start/00-Home]]. O estado operacional está em [[11-Handoff/Execution-State]].
 
 ## Estado
 
-- `WP-POC-001`: DONE.
-- `WP-POC-002`: READY.
-- Transporte GREEN-API real: **NOT_VERIFIED**. Nenhum teste fake conta como evidência desse gate.
+- `WP-POC-001` a `WP-POC-007`: DONE.
+- `WP-POC-008` (benchmark e GO/NO-GO): **READY, não iniciado**. É o gate do próprio projeto: o
+  harness existe (`EP-035`/`EP-036`), o corpus rotulado de `08-Quality/Benchmark-Plan.md` ainda não.
+- `WP-MVP-001` (resposta configurável + regra de agenda) e `WP-MVP-002` (console): DONE.
+- `WP-MVP-003` e `WP-MVP-004` (calendário): PLANNED, fora do escopo congelado.
+- Transporte GREEN-API real: **VERIFIED** em 2026-08-24, contra a instância implantada, em grupo
+  comum real, com `PEGO` citando a mensagem de origem e replay idempotente sobrevivendo a restart.
+  Nenhum teste fake conta como evidência desse gate: a prova visual da citação é a observação da
+  operadora no WhatsApp, não uma afirmação da API sobre si mesma. Evidência em
+  [[11-Handoff/WP-POC-002]].
+
+Estado operacional completo e sempre mais atual que esta seção: [[11-Handoff/Execution-State]].
 
 ## Verificação local
 
