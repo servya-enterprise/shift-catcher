@@ -172,7 +172,17 @@ def main() -> int:
             print(f"- {error}")
         return 1
 
-    print("spec_validation=PASS checksums=55 work_packages=12 endpoints=42")
+    # Counted, not spelled out. A hardcoded summary keeps printing the numbers it was written with
+    # long after they stop being true, which is worse than no summary: it reads like evidence.
+    checksums = json.loads((ROOT / "SHA256SUMS.json").read_text(encoding="utf-8"))
+    manifest = json.loads((ROOT / "MANIFEST.json").read_text(encoding="utf-8"))
+    work_packages = yaml.safe_load(
+        (ROOT / "10-Roadmap/work-packages.yaml").read_text(encoding="utf-8"),
+    )["work_packages"]
+    print(
+        f"spec_validation=PASS checksums={len(checksums)} "
+        f"work_packages={len(work_packages)} endpoints={manifest['endpoint_count']}",
+    )
     return 0
 
 
