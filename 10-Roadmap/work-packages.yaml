@@ -197,3 +197,24 @@ work_packages:
   - mirror schema has no column able to hold an event title
   - events this system wrote are ignored as commitments
   - a broken connection is visible rather than silently empty
+- id: WP-MVP-005
+  title: Angular operator module
+  status: PLANNED
+  depends_on:
+  - WP-MVP-002
+  goal: >-
+    Substituir a tela Thymeleaf de WP-MVP-002 por um modulo Angular com identidade visual propria,
+    alcancado como item do menu do Clara Care segundo
+    09-Decisions/AUTODEC-0009-Frontend-Embedding-Boundary.md: link, nao iframe nem modulo federado.
+    O navegador fala com uma porta JSON em /console/api/*, que reusa a sessao do console e chama os
+    mesmos servicos em processo, entao nenhuma operacao entra em /api/v1 e o contrato continua em 42.
+    Nenhum dado novo de dominio: 12-MVP/Frontend-Angular.md mapeia cada elemento de tela a um campo
+    que ja existe ou e derivavel. O token de administracao nunca chega ao navegador. /console
+    continua servindo ate as rotas novas passarem nos gates, e so entao vira redirect.
+  endpoints: []
+  acceptance:
+  - a hostile group message renders as text, never as markup
+  - a blank field in the correction form keeps the value already read
+  - a double click on Pegar produces one claim
+  - a stale version repaints from the server instead of retrying
+  - an unauthenticated request under /console/api returns 401 rather than a redirect

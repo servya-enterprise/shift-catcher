@@ -46,6 +46,34 @@
   `WP-MVP-003` (calendar write) and `WP-MVP-004` (calendar read) are `PLANNED`, no endpoints, so the
   contract stays at 42; `MANIFEST.json` and the validator summary go to 12 work packages. No code,
   no contract change, and no `WP-POC-008` verdict moves.
+- The Angular successor to the console is specified and bounded: `12-MVP/Frontend-Angular.md`
+  (PROPOSED) and `09-Decisions/AUTODEC-0009-Frontend-Embedding-Boundary.md` (ACTIVE), carried by
+  `WP-MVP-005` (PLANNED, no endpoints). "An option in the Clara Care menu" is a **link** to this
+  module on its own origin — not an iframe (which would force the session cookie to `SameSite=None`
+  plus a `frame-ancestors` allowance) and not a federated module (a build dependency, forbidden by
+  `AUTODEC-0008` decision 1). The browser talks to a screen-shaped JSON front door under
+  `/console/api/*` that reuses the console session and calls the same services in-process, so
+  **no operation enters `/api/v1` and the contract stays at 42**; `openapi/poc-openapi.yaml` and
+  `06-API/Endpoint-Catalog.md` are unchanged. Every screen element maps to a field that already
+  exists or is derivable — no new domain data, no migration. Two `ConsoleSessionFilter` changes are
+  the whole of the backend security work: accept the CSRF token from an `X-CSRF-Token` header, and
+  answer an unauthenticated `/console/api/*` request with `401` rather than a redirect. `/console`
+  keeps serving until the Angular routes pass their gates. `MANIFEST.json` and the validator summary
+  go to 13 work packages; `Module-Map.md` gains `webapp`. No code, no contract change, no
+  `WP-POC-008` verdict moves.
+- Two defects in the existing console surfaced while specifying the port, both in error copy reaching
+  the operator: a malformed amount raises `NumberFormatException` from
+  `amount.replace(',', '.').toBigDecimal()` and `ConsoleController.act` prints the JDK message raw;
+  and `require(current.status.isOpenForAnalysis())` renders the English "Only an opportunity that is
+  still open for analysis can be reviewed" to a pt-BR user. `WP-MVP-005` maps both to written pt-BR
+  sentences rather than carrying them forward.
+- A design control was corrected against the domain rather than the reverse: the review form had
+  proposed a "atravessa para o dia seguinte" checkbox and a cross-field error when the end time
+  preceded the start. `ShiftOpportunityService.review` **derives** `endsNextDay` as
+  `!endTime.isAfter(startTime)`, and `ReviewOpportunityRequest` has no field to carry a checkbox, so
+  19:00 → 07:00 is already understood. The form shows the derivation instead of asking. The agenda
+  form is the opposite case: `CreateAvailabilityRequest` takes `endsNextDay` explicitly and
+  `agenda.html` never rendered the control — there it is real and missing.
 - `EP-035`/`EP-036` are now IMPLEMENTED (`benchmark` module, migration `V11`). They had been
   SPECIFIED since the baseline, which meant `WP-POC-008` had no harness and could not have run even
   with a corpus in hand - the earlier note that it "needs corpus and time in the group, not code"

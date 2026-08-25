@@ -13,6 +13,7 @@
 - `reliability`: outbox/idempotência/retry/retenção.
 - `observability`: métricas/audit.
 - `console`: tela da operadora, renderizada no servidor.
+- `webapp`: módulo Angular da operadora (`WP-MVP-005`, PLANNED) e a porta JSON que o serve.
 - `benchmark`: replay do corpus rotulado para o gate do `WP-POC-008`.
 
 ## Dependências
@@ -32,6 +33,12 @@ console -> rules
 console -> claim
 console -> availability
 console -> messaging
+webapp -> shift
+webapp -> rules
+webapp -> claim
+webapp -> availability
+webapp -> messaging
+webapp -> group
 benchmark -> detection
 benchmark -> rules
 benchmark -> messaging
@@ -46,6 +53,14 @@ Ciclos proibidos entre módulos de decisão.
 acrescenta operação em `/api/v1`, então o contrato de 42 operações continua intacto. O token fica no
 servidor e o navegador recebe só a sessão — a tela renderiza texto escrito por terceiros e não pode
 carregar credencial.
+
+`webapp` é o sucessor dela e herda a mesma regra pelo mesmo motivo: o navegador fala com
+`/console/api/*`, que reusa a sessão do console e chama os mesmos serviços em processo, e não com
+`/api/v1`. Ampliar `/api/v1` para aceitar sessão de navegador poria autenticação de sessão e CSRF na
+superfície que carrega o token de administração, e faria o navegador montar telas a partir de
+chamadas de recurso — baixando todas as mensagens de terceiros para renderizar a citação de um card.
+A porta devolve carga com o formato da tela. Alcançada como link no menu do Clara Care, nunca como
+iframe ou módulo federado: `09-Decisions/AUTODEC-0009-Frontend-Embedding-Boundary.md`.
 
 `benchmark` atravessa o pipeline sem gravar nada: `MessageAnalysisService.preview` não persiste,
 e a avaliação usa uma oportunidade sintética que nunca chega ao banco. Um benchmark que criasse
