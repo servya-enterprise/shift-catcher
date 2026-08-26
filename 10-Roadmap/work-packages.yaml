@@ -221,3 +221,27 @@ work_packages:
   - a double click on Pegar produces one claim
   - a stale version repaints from the server instead of retrying
   - an unauthenticated request under /console/api returns 401 rather than a redirect
+- id: WP-MVP-006
+  title: Federated Google login and the operator map
+  status: PLANNED
+  depends_on:
+  - WP-MVP-005
+  goal: >-
+    A perna de login Google deste produto, segundo
+    09-Decisions/AUTODEC-0010-Federated-Identity-and-Shared-Frontend-Workspace.md. Nenhum servico
+    novo: spring-boot-starter-oauth2-client como cliente, o Google como provedor, e a sessao do
+    console continua sendo a que ja existe, host-only em plantoes.servya.com.br com SameSite=Strict
+    preservado. Migration V14 cria operator(id, idp_subject UNIQUE, display_name, created_at) com uma
+    linha semeada, e OperatorContext atravessa os servicos que um dia filtrarao por operadora -
+    NENHUMA das 18 tabelas ganha coluna, e o gatilho para paga-las e a segunda linha em operator.
+    ConsoleSessionFilter aceita X-CSRF-Token em cabecalho e responde 401 sob /console/api/*, as duas
+    mudancas que AUTODEC-0009 decisao 5 ja autorizava. /api/v1 sai do host publico: shiftcatcher
+    passa a servir /webhook/* e mais nada, com o bearer do webhook intacto. Nenhum endpoint entra no
+    catalogo e o contrato continua em 42.
+  endpoints: []
+  acceptance:
+  - an unknown Google sub is refused with 403, never auto-provisioned
+  - the account binds once and is matched by sub afterwards, never re-matched by email
+  - the console session cookie stays SameSite=Strict and host-only
+  - the claim path gains no network hop and no new dependency
+  - a request to /api/v1 from the public internet is refused by the edge, not by the application

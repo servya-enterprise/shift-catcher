@@ -61,6 +61,41 @@
   keeps serving until the Angular routes pass their gates. `MANIFEST.json` and the validator summary
   go to 13 work packages; `Module-Map.md` gains `webapp`. No code, no contract change, no
   `WP-POC-008` verdict moves.
+- 2026-08-26, the owner reframed the products: **Shift Catcher is a feature of Clara Care**, both feed
+  the same doctor's agenda, one repository hosts the frontends, and he asked for "um gateway que
+  também vai ter a responsabilidade de login, quero login via google". The analysis **refused the
+  gateway and the merged origin**, and `09-Decisions/AUTODEC-0010-Federated-Identity-and-Shared-Frontend-Workspace.md`
+  (ACTIVE) records why. Google enters as a login **leg** inside each product via the audited
+  `spring-boot-starter-oauth2-client`, never a hand-written OIDC provider — because Clara Care's
+  `identity` module already holds session, MFA, invitation, membership, rate limiting, revocation and
+  a security ledger, all frozen. Three origins, every cookie host-only: `claracare`,
+  `portal.claracare`, `plantoes.servya.com.br`. The merged origin was refused on an argument stronger
+  than cookie hygiene: it would put the renderer of stranger-written WhatsApp text on the **same
+  origin as the clinical record**, where an XSS reads it same-origin with the session cookie attached.
+  `AUTODEC-0009` decisions 1, 5, 9 and 12 are **preserved**; 6 breaks partially (shared identity, never
+  shared session/cookie/token/issuer/origin), 10 is superseded (a single workspace makes `projects/tokens`
+  a library on day one), and `AUTODEC-0008` decision 1 is amended **for the frontend only** — the
+  backends still never call each other and the calendar is still the only data channel.
+  `WP-MVP-006` carries it; the contract stays at 42 and no `WP-POC-008` verdict moves.
+- Two corrections to earlier claims in this session, both checked on disk. **`DEC-ARCH-008` does not
+  need superseding**: its frozen text fixes the session *mechanism* ("sessão server-side por cookie
+  HttpOnly"), not the credential presented at login, so a Google leg preserves it — an earlier reading
+  here said it needed a new `DEC` and was wrong. And **Clara Care is not in production**: no
+  `Dockerfile`, no `docker-compose.prod.yml`, no deploy job, only `ci.yml` and a development
+  `infra/compose.yaml`. `claracare.servya.com.br` does not exist, so publishing Clara Care is the
+  first phase of any of this, and routing/cookie/SSO design had been drawn on an origin nobody had
+  published.
+- Operational facts that gate the plan and are **not yet answered**: the VPS RAM is unknown, and
+  publishing Clara Care adds a 22-module JVM plus a Postgres to a two-vCPU host already carrying
+  Ollama, garimpo-zap, this project's JVM and its Postgres — if it swaps, the measured 634 ms webhook
+  becomes seconds and a missed shift produces no error, no log and no alert. ClamAV wants 1-2 GB for
+  signatures alone, so clinical document upload may not fit the first published V1.
+- The Google account is a **personal Gmail**, so TOTP stays mandatory for `DOCTOR` and `TENANT_ADMIN`
+  after the Google leg: Google satisfies identity, not the second factor. That reopens only if the
+  account becomes Workspace with 2SV actually enforced.
+- Owed in the Clara Care repository and deliberately not written from here (it has uncommitted work in
+  flight and a one-writer rule): an AUTODEC amending its `AUTODEC-0010` with the Google login leg, and
+  migration 31 adding `staff_account.google_sub UNIQUE`.
 - Checked rather than assumed, 2026-08-25: **Clara Care has no frontend yet.** Its workspace holds
   `projects/backoffice` and `projects/portal`, both untouched `ng new` output — nine files each,
   empty route arrays, default CLI README, no auth, no components. So there is no menu to be an option
