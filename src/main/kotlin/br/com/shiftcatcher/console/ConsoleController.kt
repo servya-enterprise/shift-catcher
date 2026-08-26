@@ -189,7 +189,11 @@ class ConsoleController(
                     endTime = endTime.orNull(),
                     location = location.orNull(),
                     city = city.orNull(),
-                    amount = amount.orNull()?.replace(',', '.')?.toBigDecimal(),
+                    // The same reader as the JSON door. This line used to be its own third
+                    // opinion: "1.800" became one real eighty, and "1.800,00" — the format the
+                    // other door's own error message advertises as correct — became "1.800.00"
+                    // and threw the JDK's English complaint at her.
+                    amount = BrazilianAmount.parse(amount),
                     reviewNote = reviewNote.orNull(),
                     version = version,
                 ),

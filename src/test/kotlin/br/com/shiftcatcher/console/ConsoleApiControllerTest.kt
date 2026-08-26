@@ -339,7 +339,13 @@ class ConsoleApiControllerTest(
             .post("/console/api/opportunities/$OPPORTUNITY_ID/claim") {
                 session = signedIn
                 header(ConsoleSessionFilter.CSRF_HEADER, csrfTokenOf(signedIn))
-            }.andExpect { status { isConflict() } }
+            }.andExpect {
+                status { isConflict() }
+                // Not the service's generic CONFLICT. The app maps that one to "alguém chegou
+                // primeiro" and marks it permanently unretryable, which is a second false sentence
+                // in the same place: nobody got there first, she took it back herself.
+                jsonPath("$.code") { value("CLAIM_RETRACTED") }
+            }
     }
 
     @Test
@@ -360,7 +366,12 @@ class ConsoleApiControllerTest(
             .post("/console/api/opportunities/$OPPORTUNITY_ID/claim") {
                 session = signedIn
                 header(ConsoleSessionFilter.CSRF_HEADER, csrfTokenOf(signedIn))
-            }.andExpect { status { isConflict() } }
+            }.andExpect {
+                status { isConflict() }
+                // The shift is unclaimed and the existing claim can be retried, so telling her
+                // somebody else took it would stop her looking for something still available.
+                jsonPath("$.code") { value("CLAIM_SEND_FAILED") }
+            }
     }
 
     @Test

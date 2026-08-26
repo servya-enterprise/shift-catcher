@@ -211,7 +211,8 @@ class ConsoleApiController(
                 } else {
                     null
                 }
-            existing?.let { ConsoleClaimAck(claim = it.toRow(formatter), alreadyClaimed = true) } ?: throw conflict
+            existing?.let { ConsoleClaimAck(claim = it.toRow(formatter), alreadyClaimed = true) }
+                ?: throw deadClaimOr(conflict, opportunityId)
         }
 
     /**
@@ -278,6 +279,46 @@ class ConsoleApiController(
             IgnoreOpportunityRequest(reviewNote = body.reviewNote.orNull(), version = body.version),
         )
         return detailOf(opportunityId)
+    }
+
+    /**
+     * Says which kind of "already claimed" this is, when the claim is not a live one.
+     *
+     * Rethrowing the service's CONFLICT verbatim was a second false sentence in the same place. The
+     * app maps CONFLICT to "alguém chegou primeiro" and marks it permanently unretryable — but
+     * nobody got there first: her own send failed, the shift is unclaimed, and
+     * `POST /console/api/claims/{id}/retry` would re-arm the very send that failed. She stops
+     * looking for a shift that is still there.
+     */
+    private fun deadClaimOr(
+        conflict: ApiProblemException,
+        opportunityId: String,
+    ): ApiProblemException {
+        if (conflict.status != HttpStatus.CONFLICT || conflict.code != "CONFLICT") return conflict
+        val dead = claimService.list().claims.firstOrNull { it.opportunityId == opportunityId } ?: return conflict
+        return when (dead.status) {
+            ClaimStatus.FAILED -> {
+                ApiProblemException(
+                    status = HttpStatus.CONFLICT,
+                    code = "CLAIM_SEND_FAILED",
+                    title = "The claim was created but never sent",
+                    message = "Retry the existing claim rather than creating a second one",
+                )
+            }
+
+            ClaimStatus.RETRACTED -> {
+                ApiProblemException(
+                    status = HttpStatus.CONFLICT,
+                    code = "CLAIM_RETRACTED",
+                    title = "The claim was taken back",
+                    message = "This opportunity was claimed and the claim was retracted",
+                )
+            }
+
+            else -> {
+                conflict
+            }
+        }
     }
 
     // --- claims -------------------------------------------------------------
@@ -439,30 +480,11 @@ class ConsoleApiController(
     /**
      * Reads the amount the way she types it.
      *
-     * "1.800,00" and "1800" are both what a Brazilian writes for the same number, and
-     * `String.toBigDecimal` accepts neither of the first. Getting this wrong once turned a thousand
-     * eight hundred into one point eight.
+     * One line, because the rule lives in [BrazilianAmount] and is shared with the server-rendered
+     * console. Three private copies of it is how the same string came to mean three different
+     * numbers in one product.
      */
-    private fun amountOf(raw: String?): BigDecimal? {
-        val trimmed = raw.orNull() ?: return null
-        val normalized =
-            when {
-                // "1.800,00" — dots group thousands, the comma is the decimal mark.
-                trimmed.contains(',') -> trimmed.replace(".", "").replace(',', '.')
-
-                // "1.800" — the ordinary way to write it, and the one that used to become 1.8.
-                // BigDecimal("1.800") is valid and non-null, so the guard below never fired: the
-                // board redrew "R$ 1,80" and the rules rejected the shift as below the minimum.
-                // The extractor already reads this correctly, so the same string from a WhatsApp
-                // message and from this form disagreed by a factor of a thousand.
-                THOUSANDS.matches(trimmed) -> trimmed.replace(".", "")
-
-                // "1800" and "1200.50" — nothing to strip.
-                else -> trimmed
-            }
-        return normalized.toBigDecimalOrNull()
-            ?: throw IllegalArgumentException("amount must be a number, for example 1800 or 1.800,00")
-    }
+    private fun amountOf(raw: String?): BigDecimal? = BrazilianAmount.parse(raw)
 
     private fun br.com.shiftcatcher.claim.ClaimMessageResponse.toApi(): ConsoleClaimMessageResponse =
         ConsoleClaimMessageResponse(
@@ -476,14 +498,6 @@ class ConsoleApiController(
     private companion object {
         /** Two failures is a blip; three in a row is an outage worth telling her about. */
         const val DOWN_AFTER = 3
-
-        /**
-         * Dot-grouped thousands with no decimal part: "1.800", "1.800.000".
-         *
-         * Deliberately not matched: "1200.50" (four leading digits) and "1.8" (a two-digit tail).
-         * Both are decimal points, and stripping them would be the same mistake in reverse.
-         */
-        val THOUSANDS = Regex("""^-?\d{1,3}(\.\d{3})+$""")
         val logger = LoggerFactory.getLogger(ConsoleApiController::class.java)
     }
 }
