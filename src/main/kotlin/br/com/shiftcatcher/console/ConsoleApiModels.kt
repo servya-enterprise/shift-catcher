@@ -4,7 +4,6 @@ import br.com.shiftcatcher.availability.CommitmentResponse
 import br.com.shiftcatcher.claim.ClaimResponse
 import br.com.shiftcatcher.messaging.IncomingMessageResponse
 import br.com.shiftcatcher.shift.ShiftOpportunityResponse
-import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -148,14 +147,21 @@ data class ConsoleSource(
     val providerTimestamp: String,
 )
 
-/** The values a correction form starts from, in the shapes the inputs expect. */
+/**
+ * The values a correction form starts from, in the shapes the inputs expect.
+ *
+ * [amount] is a string, and deliberately so. A BigDecimal serialises as a JSON number, JavaScript
+ * has one numeric type, and money that round-trips through a double loses cents silently. It also
+ * arrives written the way she will retype it — "1200,00", not "1200.00" — so the form seeds with
+ * her notation rather than the server's.
+ */
 data class ConsoleEditable(
     val shiftDate: LocalDate?,
     val startTime: LocalTime?,
     val endTime: LocalTime?,
     val location: String?,
     val city: String?,
-    val amount: BigDecimal?,
+    val amount: String?,
     val reviewNote: String?,
 )
 
@@ -385,7 +391,7 @@ internal fun ShiftOpportunityResponse.toDetail(
                 endTime = endTime,
                 location = location,
                 city = city,
-                amount = amount,
+                amount = amount?.toPlainString()?.replace('.', ','),
                 reviewNote = reviewNote,
             ),
         source =
