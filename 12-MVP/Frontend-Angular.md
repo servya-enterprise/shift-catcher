@@ -72,6 +72,7 @@ Front-door operations, listed here because a thing that exists should be written
 | Method | Path | Serves | In-process source |
 |---|---|---|---|
 | POST | `/console/api/session` | sign-in | `ShiftCatcherProperties.security.adminApiToken` |
+| GET | `/console/api/session` | recover after a reload | the session itself |
 | DELETE | `/console/api/session` | sign-out | — |
 | GET | `/console/api/board` | Ofertas | `ShiftOpportunityService.list` + `IngestionService.list` + `GroupService` |
 | GET | `/console/api/opportunities/{id}` | Detalhe | `ShiftOpportunityService.detail` + `IngestionService` |
@@ -87,11 +88,28 @@ Front-door operations, listed here because a thing that exists should be written
 | GET | `/console/api/messages` | Mensagens | `IngestionService.list` |
 | GET/PUT | `/console/api/settings/claim-message` | Ajustes | `ClaimMessageService` |
 
-Two changes to `ConsoleSessionFilter` are required and are the whole of the backend security work:
-it must accept the CSRF token from an `X-CSRF-Token` **header** as well as a request parameter (a
-JSON body field is not a request parameter), and it must answer an unauthenticated request under
-`/console/api/*` with **401** rather than a redirect, because a fetch cannot follow a redirect to a
-login page usefully.
+`GET /console/api/session` was missing from the first version of this table, and its absence was the
+most consequential thing in it. The console cookie is `HttpOnly`, so the app cannot read the CSRF
+token from it, and the token was only ever issued at sign-in. After a page reload the operator is
+still authenticated — the cookie is good for eight hours — and the app has no token, so every
+state-changing request answers 403 and her only remedy is to sign out and back in. See
+[[09-Decisions/AUTODEC-0011-Console-JSON-Front-Door]].
+
+**Four** changes to `ConsoleSessionFilter` are required, not the two first written here, and they are
+the whole of the backend security work:
+
+1. accept the CSRF token from an `X-CSRF-Token` **header** as well as a request parameter (a JSON
+   body field is not a request parameter);
+2. answer an unauthenticated request under `/console/api/*` with **401 `application/problem+json`
+   written by the filter** rather than a redirect — a browser follows a redirect transparently, so
+   the app would receive 200 with a sign-in page in the body, and `sendError` is no better because
+   `server.error.include-message: never` strips the message and may return HTML;
+3. exempt `POST /console/api/session` from the authentication check — today the only exemption is an
+   exact-URI match on `/console/login`, so the sign-in fetch is redirected before it reaches a
+   handler. The exemption matches URI **and** method, so `GET` and `DELETE` on the same path still
+   require a session;
+4. check CSRF on **every unsafe method**, not only `POST`. The server-rendered console only ever
+   posts; the JSON door uses `PUT` and `DELETE`, and a check that names one verb protects one verb.
 
 ## Every screen already has its data
 

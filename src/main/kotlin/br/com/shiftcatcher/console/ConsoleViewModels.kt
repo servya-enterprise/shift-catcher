@@ -4,7 +4,11 @@ import br.com.shiftcatcher.availability.CommitmentResponse
 import br.com.shiftcatcher.claim.ClaimResponse
 import br.com.shiftcatcher.messaging.IncomingMessageResponse
 import br.com.shiftcatcher.shift.ShiftOpportunityResponse
+import java.time.Clock
+import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -17,14 +21,53 @@ import java.time.format.DateTimeFormatter
  */
 class ConsoleFormatter(
     private val zone: ZoneId,
+    private val clock: Clock = Clock.systemUTC(),
 ) {
     fun moment(instant: Instant?): String = instant?.let { MOMENT.format(it.atZone(zone)) } ?: EMPTY
 
+    /**
+     * The line above the window: "Hoje", "Amanhã", or "qua, 27/08".
+     *
+     * Relative wording only for the two days she can act on. Beyond that a weekday is what tells
+     * her whether a shift collides with something, and "em 3 dias" does not.
+     */
+    fun dateEyebrow(date: LocalDate?): String {
+        if (date == null) return "sem data"
+        val today = LocalDate.ofInstant(clock.instant(), zone)
+        return when (date) {
+            today -> "Hoje"
+            today.plusDays(1) -> "Amanhã"
+            today.minusDays(1) -> "Ontem"
+            else -> "${WEEKDAY.format(date)}, ${DATE.format(date)}"
+        }
+    }
+
+    /**
+     * How long the shift lasts, as "12h" or "11h30".
+     *
+     * Derived here rather than in the browser because the rule that decides it is a server rule:
+     * an end time that is not after the start means the shift crosses midnight. That derivation
+     * already exists in the review path, and two implementations of it would disagree the first
+     * time one of them changed.
+     */
+    fun duration(
+        start: LocalTime?,
+        end: LocalTime?,
+        endsNextDay: Boolean,
+    ): String {
+        if (start == null || end == null) return EMPTY
+        val span = Duration.between(start, end).toMinutes()
+        val minutes = if (endsNextDay || span <= 0) span + MINUTES_PER_DAY else span
+        val hours = minutes / MINUTES_PER_HOUR
+        val rest = minutes % MINUTES_PER_HOUR
+        return if (rest == 0L) "${hours}h" else "${hours}h${rest.toString().padStart(2, '0')}"
+    }
+
     /** "25/08 19:00–07:00 (+1)" — the shape she reads on a phone, not an ISO timestamp. */
     fun window(
-        date: java.time.LocalDate?,
-        start: java.time.LocalTime?,
-        end: java.time.LocalTime?,
+        date: LocalDate?,
+        start: LocalTime?,
+        end: LocalTime?,
         endsNextDay: Boolean,
     ): String {
         val datePart = date?.let { DATE.format(it) } ?: "data?"
@@ -52,9 +95,12 @@ class ConsoleFormatter(
 
     private companion object {
         const val EMPTY = ""
+        const val MINUTES_PER_HOUR = 60L
+        const val MINUTES_PER_DAY = 1440L
         val BRAZIL: java.util.Locale = java.util.Locale.of("pt", "BR")
         val MOMENT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM HH:mm:ss")
         val DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM")
+        val WEEKDAY: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE", BRAZIL)
         val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     }
 }

@@ -8,8 +8,10 @@ import jakarta.servlet.http.HttpSession
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
+import tools.jackson.databind.ObjectMapper
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -23,11 +25,18 @@ import java.util.Base64
  * every call — would put a credential inside a document that renders WhatsApp messages written by
  * strangers. The token stays on the server; the browser gets something that is useless anywhere
  * else and expires.
+ *
+ * Two front doors sit behind this filter now, and they fail differently. The server-rendered pages
+ * answer a browser navigation, so an unauthenticated request is met with a redirect to the login
+ * page. The paths under the API prefix answer a fetch, and a redirect there is worse than useless:
+ * the browser follows it transparently and the caller receives 200 with a login page in the body.
+ * So the API prefix gets application/problem+json with a status the client can branch on.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 20)
 class ConsoleSessionFilter(
     private val properties: ShiftCatcherProperties,
+    private val objectMapper: ObjectMapper,
 ) : OncePerRequestFilter() {
     override fun shouldNotFilter(request: HttpServletRequest): Boolean = !request.requestURI.startsWith(CONSOLE_PREFIX)
 
@@ -36,46 +45,134 @@ class ConsoleSessionFilter(
         response: HttpServletResponse,
         filterChain: FilterChain,
     ) {
+        val json = request.requestURI.startsWith(API_PREFIX)
+
         // A console with no token configured is not an open console; it is a disabled one.
         if (properties.security.adminApiToken.isBlank()) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND)
+            if (json) {
+                problem(response, HttpServletResponse.SC_NOT_FOUND, "NOT_FOUND", "Console disabled", DISABLED, request)
+            } else {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND)
+            }
             return
         }
         if (request.requestURI == LOGIN_PATH) {
             filterChain.doFilter(request, response)
             return
         }
+        // Sign-in is the one call that arrives without a session and is expected to. The exemption
+        // is an exact URI-and-method match rather than a prefix, so nothing else inherits it: GET
+        // and DELETE on the same path still require a session.
+        if (json && request.requestURI == SESSION_PATH && request.method.equals("POST", ignoreCase = true)) {
+            filterChain.doFilter(request, response)
+            return
+        }
         val session = request.getSession(false)
         if (session == null || session.getAttribute(AUTHENTICATED) != true) {
-            response.sendRedirect(LOGIN_PATH)
+            if (json) {
+                problem(
+                    response,
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "AUTHENTICATION_REQUIRED",
+                    "Sign-in required",
+                    "This console session has expired or was never established",
+                    request,
+                )
+            } else {
+                response.sendRedirect(LOGIN_PATH)
+            }
             return
         }
         // SameSite=strict already stops a cross-site POST from ever carrying this cookie. The token
         // is the second lock, for the browsers and proxies that get the first one wrong.
-        if (request.method.equals("POST", ignoreCase = true) && !hasValidCsrfToken(request, session)) {
-            securityLogger.warn("Rejected a console POST to {} without a matching CSRF token", request.requestURI)
-            response.sendError(HttpServletResponse.SC_FORBIDDEN)
+        //
+        // Every unsafe method, not only POST: the JSON front door uses PUT and DELETE, and a check
+        // that names one verb protects one verb.
+        if (isUnsafe(request.method) && !hasValidCsrfToken(request, session)) {
+            securityLogger.warn(
+                "Rejected a console {} to {} without a matching CSRF token",
+                request.method,
+                request.requestURI,
+            )
+            if (json) {
+                problem(
+                    response,
+                    HttpServletResponse.SC_FORBIDDEN,
+                    "CSRF_VALIDATION_FAILED",
+                    "Missing or stale CSRF token",
+                    "Fetch the session again to obtain a current token",
+                    request,
+                )
+            } else {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN)
+            }
             return
         }
         filterChain.doFilter(request, response)
     }
 
+    /**
+     * The header first, the form field second.
+     *
+     * The server-rendered console posts a hidden field; a fetch cannot set one without building a
+     * form body, and the single-page app sends JSON. Both are accepted, and both are compared in
+     * constant time.
+     */
     private fun hasValidCsrfToken(
         request: HttpServletRequest,
         session: HttpSession,
     ): Boolean {
         val expected = session.getAttribute(CSRF_TOKEN) as? String ?: return false
-        val presented = request.getParameter(CSRF_FIELD) ?: return false
+        val presented = request.getHeader(CSRF_HEADER) ?: request.getParameter(CSRF_FIELD) ?: return false
         return constantTimeEquals(expected, presented)
     }
 
+    /**
+     * Writes the problem document itself rather than delegating to sendError.
+     *
+     * The application sets server.error.include-message to never, which strips the message from the
+     * container's error page, and the page that comes back may well be HTML. A client that has to
+     * parse JSON to learn why it was refused cannot be handed either.
+     */
+    private fun problem(
+        response: HttpServletResponse,
+        status: Int,
+        code: String,
+        title: String,
+        detail: String,
+        request: HttpServletRequest,
+    ) {
+        response.status = status
+        response.contentType = MediaType.APPLICATION_PROBLEM_JSON_VALUE
+        response.characterEncoding = StandardCharsets.UTF_8.name()
+        response.writer.write(
+            objectMapper.writeValueAsString(
+                mapOf(
+                    "type" to "about:blank",
+                    "title" to title,
+                    "status" to status,
+                    "detail" to detail,
+                    "instance" to request.requestURI,
+                    "code" to code,
+                ),
+            ),
+        )
+    }
+
+    private fun isUnsafe(method: String): Boolean = !SAFE_METHODS.contains(method.uppercase())
+
     companion object {
         const val CONSOLE_PREFIX = "/console"
+        const val API_PREFIX = "/console/api/"
+        const val SESSION_PATH = "/console/api/session"
         const val LOGIN_PATH = "/console/login"
         const val AUTHENTICATED = "shiftCatcherConsoleAuthenticated"
         const val CSRF_TOKEN = "shiftCatcherConsoleCsrfToken"
         const val CSRF_FIELD = "csrfToken"
+        const val CSRF_HEADER = "X-CSRF-Token"
 
+        private const val DISABLED = "The operator console has no admin token configured"
+        private val SAFE_METHODS = setOf("GET", "HEAD", "OPTIONS", "TRACE")
         private val securityLogger = LoggerFactory.getLogger(ConsoleSessionFilter::class.java)
         private val random = SecureRandom()
 

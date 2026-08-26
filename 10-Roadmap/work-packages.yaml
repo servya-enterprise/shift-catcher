@@ -221,6 +221,9 @@ work_packages:
   - a double click on Pegar produces one claim
   - a stale version repaints from the server instead of retrying
   - an unauthenticated request under /console/api returns 401 rather than a redirect
+  - a page reload recovers the CSRF token from GET /console/api/session, not from a fresh sign-in
+  - a second claim on the same opportunity answers 200 with the existing claim, never an error
+  - an unsafe method other than POST is also refused without a matching CSRF token
 - id: WP-MVP-006
   title: Federated Google login and the operator map
   status: PLANNED
