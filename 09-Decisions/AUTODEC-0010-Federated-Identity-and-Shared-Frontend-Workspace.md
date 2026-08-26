@@ -147,10 +147,11 @@ engine, the claim path or the 42-operation contract.
 the two `ConsoleSessionFilter` changes `AUTODEC-0009` decision 5 already authorised. `MANIFEST.json`
 and the validator summary go to 14 work packages.
 
-Two documents are owed in the **Clara Care** repository and are not written here, because that
-repository has uncommitted work in flight and a one-writer rule: an AUTODEC amending its
-`AUTODEC-0010` with the Google login leg, and migration 31 adding `staff_account.google_sub UNIQUE`.
-Neither needs a new `DEC` — see the context above.
+The Clara Care side is recorded there as `AUTODEC-0050`, amending its own `AUTODEC-0010` with the
+Google login leg and one migration adding `app.staff_account.google_sub UNIQUE`. Neither needs a new
+`DEC` — see the context above. That migration's **number is deliberately not named**: Clara Care
+gains migrations faster than a decision document is read, so the implementing work package takes the
+next free one.
 
 ## Evidence
 - Clara Care baseline read 2026-08-26: no `Dockerfile`, no `docker-compose.prod.yml`, `.github/workflows`
