@@ -48,6 +48,7 @@ import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import tools.jackson.databind.ObjectMapper
 import java.math.BigDecimal
+import java.net.URI
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -142,6 +143,33 @@ class ConsoleApiControllerTest(
             content { contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON) }
             jsonPath("$.code") { value("AUTHENTICATION_REQUIRED") }
         }
+    }
+
+    @Test
+    fun `a percent-encoded path does not walk past the filter`() {
+        // getRequestURI() is NOT decoded — the servlet specification forbids it — while Spring
+        // matches a handler against PathSegment.valueToMatch(), which IS decoded. A filter that
+        // tests the raw URI therefore sees "/%63onsole/api/board", decides the request is none of
+        // its business, and lets an anonymous caller reach a handler that Spring happily resolves
+        // to /console/api/board.
+        //
+        // That is every ingested WhatsApp message and every opportunity handed to a stranger, and
+        // the claim endpoint executing with no session and no CSRF token.
+        // java.net.URI, not the string overload: the string overload runs through
+        // UriComponentsBuilder, which encodes the % itself and turns "%63" into "%2563" — a
+        // different request that proves nothing.
+        mockMvc.get(URI.create("/%63onsole/api/board")).andExpect { status { isUnauthorized() } }
+        mockMvc.get(URI.create("/%63onsole/api/%73ession")).andExpect { status { isUnauthorized() } }
+        mockMvc
+            .post(URI.create("/%63onsole/api/opportunities/$OPPORTUNITY_ID/claim"))
+            .andExpect { status { isUnauthorized() } }
+    }
+
+    @Test
+    fun `a path parameter does not walk past the filter either`() {
+        // valueToMatch() also strips path parameters, so ";x=1" is another way to make the raw URI
+        // and the matched path disagree.
+        mockMvc.get("/console/api/board;x=1").andExpect { status { isUnauthorized() } }
     }
 
     @Test
@@ -291,6 +319,51 @@ class ConsoleApiControllerTest(
     }
 
     @Test
+    fun `a claim she already took back is not reported as still hers`() {
+        // ClaimService guards on the existence of a claim row, not on its state, so an opportunity
+        // whose claim was retracted still answers 409. Calling that "já pego" tells her she holds a
+        // shift that nobody in the group was ever told she wanted — and she stops looking for it.
+        val signedIn = signIn()
+        given(claimService.list())
+            .willReturn(ClaimListResponse(listOf(claim(ClaimStatus.RETRACTED)), count = 1, limit = 100))
+        given(claimService.claim(OPPORTUNITY_ID, null)).willThrow(
+            ApiProblemException(
+                status = HttpStatus.CONFLICT,
+                code = "CONFLICT",
+                title = "Opportunity already claimed",
+                message = "A claim already exists for this opportunity",
+            ),
+        )
+
+        mockMvc
+            .post("/console/api/opportunities/$OPPORTUNITY_ID/claim") {
+                session = signedIn
+                header(ConsoleSessionFilter.CSRF_HEADER, csrfTokenOf(signedIn))
+            }.andExpect { status { isConflict() } }
+    }
+
+    @Test
+    fun `a claim that failed to send is not reported as hers either`() {
+        val signedIn = signIn()
+        given(claimService.list())
+            .willReturn(ClaimListResponse(listOf(claim(ClaimStatus.FAILED)), count = 1, limit = 100))
+        given(claimService.claim(OPPORTUNITY_ID, null)).willThrow(
+            ApiProblemException(
+                status = HttpStatus.CONFLICT,
+                code = "CONFLICT",
+                title = "Opportunity already claimed",
+                message = "A claim already exists for this opportunity",
+            ),
+        )
+
+        mockMvc
+            .post("/console/api/opportunities/$OPPORTUNITY_ID/claim") {
+                session = signedIn
+                header(ConsoleSessionFilter.CSRF_HEADER, csrfTokenOf(signedIn))
+            }.andExpect { status { isConflict() } }
+    }
+
+    @Test
     fun `a conflict with no claim to show still fails`() {
         val signedIn = signIn()
         given(claimService.claim(OPPORTUNITY_ID, null)).willThrow(
@@ -360,6 +433,45 @@ class ConsoleApiControllerTest(
             }.andExpect { status { isOk() } }
 
         verify(opportunityService).review(OPPORTUNITY_ID, ReviewOpportunityRequest(amount = BigDecimal("1800"), version = 3))
+    }
+
+    @Test
+    fun `dot-grouped thousands are one thousand eight hundred, not one point eight`() {
+        // The way a Brazilian writes it, and the placeholder the form itself advertises. Before the
+        // fix "1.800" passed straight through: BigDecimal("1.800") is valid and non-null, so the
+        // guard never fired, the board redrew "R$ 1,80" and the rules rejected the shift for being
+        // below the minimum. The extractor already read the same string as 1800 from a WhatsApp
+        // message, so the two paths disagreed by a factor of a thousand.
+        val signedIn = signIn()
+
+        mockMvc
+            .post("/console/api/opportunities/$OPPORTUNITY_ID/review") {
+                session = signedIn
+                header(ConsoleSessionFilter.CSRF_HEADER, csrfTokenOf(signedIn))
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"amount":"1.800","version":3}"""
+            }.andExpect { status { isOk() } }
+
+        verify(opportunityService)
+            .review(OPPORTUNITY_ID, ReviewOpportunityRequest(amount = BigDecimal("1800"), version = 3))
+    }
+
+    @Test
+    fun `a decimal point is still a decimal point`() {
+        // The mirror of the case above, and the reason the rule is a pattern rather than "strip all
+        // dots": 1200.50 is twelve hundred and fifty centavos, not a hundred and twenty thousand.
+        val signedIn = signIn()
+
+        mockMvc
+            .post("/console/api/opportunities/$OPPORTUNITY_ID/review") {
+                session = signedIn
+                header(ConsoleSessionFilter.CSRF_HEADER, csrfTokenOf(signedIn))
+                contentType = MediaType.APPLICATION_JSON
+                content = """{"amount":"1200.50","version":3}"""
+            }.andExpect { status { isOk() } }
+
+        verify(opportunityService)
+            .review(OPPORTUNITY_ID, ReviewOpportunityRequest(amount = BigDecimal("1200.50"), version = 3))
     }
 
     @Test
@@ -466,11 +578,11 @@ class ConsoleApiControllerTest(
             extractionCompletedAt = NOW,
         )
 
-    private fun claim(): ClaimResponse =
+    private fun claim(status: ClaimStatus = ClaimStatus.CLAIMED): ClaimResponse =
         ClaimResponse(
             id = UUID.randomUUID().toString(),
             opportunityId = OPPORTUNITY_ID,
-            status = ClaimStatus.CLAIMED,
+            status = status,
             mode = ClaimMode.MANUAL,
             chatId = "120363000000000000@g.us",
             quotedMessageId = "offer-1",

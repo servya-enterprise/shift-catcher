@@ -1,6 +1,7 @@
 package br.com.shiftcatcher.console
 
 import br.com.shiftcatcher.foundation.config.ShiftCatcherProperties
+import br.com.shiftcatcher.foundation.http.matchablePath
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -38,14 +39,18 @@ class ConsoleSessionFilter(
     private val properties: ShiftCatcherProperties,
     private val objectMapper: ObjectMapper,
 ) : OncePerRequestFilter() {
-    override fun shouldNotFilter(request: HttpServletRequest): Boolean = !request.requestURI.startsWith(CONSOLE_PREFIX)
+    // matchablePath(), never requestURI: the raw URI is not decoded and the path Spring matches a
+    // handler against is. Testing the raw one let /%63onsole/api/board walk past this filter and
+    // reach the controller with no session at all.
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean = !request.matchablePath().startsWith(CONSOLE_PREFIX)
 
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
         filterChain: FilterChain,
     ) {
-        val json = request.requestURI.startsWith(API_PREFIX)
+        val path = request.matchablePath()
+        val json = path.startsWith(API_PREFIX)
 
         // A console with no token configured is not an open console; it is a disabled one.
         if (properties.security.adminApiToken.isBlank()) {
@@ -56,14 +61,14 @@ class ConsoleSessionFilter(
             }
             return
         }
-        if (request.requestURI == LOGIN_PATH) {
+        if (path == LOGIN_PATH) {
             filterChain.doFilter(request, response)
             return
         }
         // Sign-in is the one call that arrives without a session and is expected to. The exemption
         // is an exact URI-and-method match rather than a prefix, so nothing else inherits it: GET
         // and DELETE on the same path still require a session.
-        if (json && request.requestURI == SESSION_PATH && request.method.equals("POST", ignoreCase = true)) {
+        if (json && path == SESSION_PATH && request.method.equals("POST", ignoreCase = true)) {
             filterChain.doFilter(request, response)
             return
         }

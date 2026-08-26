@@ -19,8 +19,13 @@ class AdminBearerFilter(
     private val properties: ShiftCatcherProperties,
     private val objectMapper: ObjectMapper,
 ) : OncePerRequestFilter() {
-    override fun shouldNotFilter(request: HttpServletRequest): Boolean =
-        !request.requestURI.startsWith(API_PREFIX) || request.requestURI == WEBHOOK_PATH
+    // matchablePath(), never requestURI — see MatchablePath.kt. Testing the raw URI let
+    // /%61pi/v1/... past the bearer check entirely, and let /%61pi/v1/webhooks/green-api past BOTH
+    // this filter and the webhook signature filter, so unsigned payloads reached the controller.
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean {
+        val path = request.matchablePath()
+        return !path.startsWith(API_PREFIX) || path == WEBHOOK_PATH
+    }
 
     override fun doFilterInternal(
         request: HttpServletRequest,

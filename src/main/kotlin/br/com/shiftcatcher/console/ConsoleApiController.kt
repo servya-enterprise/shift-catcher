@@ -5,6 +5,7 @@ import br.com.shiftcatcher.availability.CreateAvailabilityRequest
 import br.com.shiftcatcher.claim.ClaimMessageRequest
 import br.com.shiftcatcher.claim.ClaimMessageService
 import br.com.shiftcatcher.claim.ClaimService
+import br.com.shiftcatcher.claim.ClaimStatus
 import br.com.shiftcatcher.claim.RetractClaimRequest
 import br.com.shiftcatcher.foundation.config.ShiftCatcherProperties
 import br.com.shiftcatcher.foundation.http.ApiProblemException
@@ -196,7 +197,17 @@ class ConsoleApiController(
                     // There is no service method that finds a claim by opportunity, so the list is
                     // the only public way in. It is capped at a hundred rows, which is why a miss
                     // rethrows rather than inventing a success.
-                    claimService.list().claims.firstOrNull { it.opportunityId == opportunityId }
+                    //
+                    // RETRACTED and FAILED are excluded on purpose. ClaimService guards on the
+                    // existence of a row and not on its state, so a claim she already took back —
+                    // or one the provider refused — still produces this 409. Reporting that as
+                    // "já pego" tells her she holds a shift that nobody in the group was ever told
+                    // she wanted. A dead row falls through to the honest conflict below.
+                    claimService.list().claims.firstOrNull {
+                        it.opportunityId == opportunityId &&
+                            it.status != ClaimStatus.RETRACTED &&
+                            it.status != ClaimStatus.FAILED
+                    }
                 } else {
                     null
                 }
@@ -434,7 +445,21 @@ class ConsoleApiController(
      */
     private fun amountOf(raw: String?): BigDecimal? {
         val trimmed = raw.orNull() ?: return null
-        val normalized = if (trimmed.contains(',')) trimmed.replace(".", "").replace(',', '.') else trimmed
+        val normalized =
+            when {
+                // "1.800,00" — dots group thousands, the comma is the decimal mark.
+                trimmed.contains(',') -> trimmed.replace(".", "").replace(',', '.')
+
+                // "1.800" — the ordinary way to write it, and the one that used to become 1.8.
+                // BigDecimal("1.800") is valid and non-null, so the guard below never fired: the
+                // board redrew "R$ 1,80" and the rules rejected the shift as below the minimum.
+                // The extractor already reads this correctly, so the same string from a WhatsApp
+                // message and from this form disagreed by a factor of a thousand.
+                THOUSANDS.matches(trimmed) -> trimmed.replace(".", "")
+
+                // "1800" and "1200.50" — nothing to strip.
+                else -> trimmed
+            }
         return normalized.toBigDecimalOrNull()
             ?: throw IllegalArgumentException("amount must be a number, for example 1800 or 1.800,00")
     }
@@ -451,6 +476,14 @@ class ConsoleApiController(
     private companion object {
         /** Two failures is a blip; three in a row is an outage worth telling her about. */
         const val DOWN_AFTER = 3
+
+        /**
+         * Dot-grouped thousands with no decimal part: "1.800", "1.800.000".
+         *
+         * Deliberately not matched: "1200.50" (four leading digits) and "1.8" (a two-digit tail).
+         * Both are decimal points, and stripping them would be the same mistake in reverse.
+         */
+        val THOUSANDS = Regex("""^-?\d{1,3}(\.\d{3})+$""")
         val logger = LoggerFactory.getLogger(ConsoleApiController::class.java)
     }
 }

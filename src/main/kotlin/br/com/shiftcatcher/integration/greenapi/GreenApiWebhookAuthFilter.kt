@@ -2,6 +2,7 @@ package br.com.shiftcatcher.integration.greenapi
 
 import br.com.shiftcatcher.foundation.config.ShiftCatcherProperties
 import br.com.shiftcatcher.foundation.http.CORRELATION_ID_HEADER
+import br.com.shiftcatcher.foundation.http.matchablePath
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ReadListener
 import jakarta.servlet.ServletInputStream
@@ -26,7 +27,10 @@ class GreenApiWebhookAuthFilter(
     private val properties: ShiftCatcherProperties,
     private val objectMapper: ObjectMapper,
 ) : OncePerRequestFilter() {
-    override fun shouldNotFilter(request: HttpServletRequest): Boolean = request.requestURI != WEBHOOK_PATH
+    // matchablePath(), never requestURI — see MatchablePath.kt. With the raw URI, an encoded
+    // path skipped this filter and the admin bearer filter at the same time, and an unsigned
+    // webhook payload was accepted.
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean = request.matchablePath() != WEBHOOK_PATH
 
     override fun doFilterInternal(
         request: HttpServletRequest,
