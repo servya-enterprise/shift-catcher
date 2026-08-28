@@ -85,9 +85,22 @@ in its own database. Authorisation never crosses the boundary: no role, no permi
 ### 2. The handoff is a signed assertion, verified offline
 
 Clara Care mints a compact assertion when an authenticated staff member follows the Plantões link.
-It is signed with EdDSA through a vetted JOSE library, and this product verifies it with a **public
-key held in its own configuration**. No call is made in either direction, so `AUTODEC-0008`
-decision 1 stands as written: the backends still never talk to each other.
+It is signed with Ed25519 and this product verifies it with a **public key held in its own
+configuration**. No call is made in either direction, so `AUTODEC-0008` decision 1 stands as
+written: the backends still never talk to each other.
+
+**It is not a JWT, and that is the security decision rather than a preference.** A JWT announces its
+own algorithm in a header the attacker controls, and the whole confusion family — `alg: none`, an
+RS256 token verified as HS256 with the public key as the secret — exists only because there is a
+negotiation to attack. The bytes here are `base64url(payload) "." base64url(signature)`, the
+algorithm is always Ed25519, and neither half writes it down, so neither can be told to change it.
+A token arriving with two dots is refused for having the *shape* of a JWT: a verifier that reads a
+header at all is one that can be talked into reading the wrong one.
+
+The primitive is nobody's invention — Ed25519 has been in the JDK since 15, and both halves call it.
+That is what lets a service with neither Spring Security nor a JOSE library gain no dependency at
+all, and it is why "roll your own" does not apply: what is hand-written is a container with one
+algorithm and no negotiation, which is strictly less surface than the standard it replaces.
 
 The assertion is deliberately the narrowest thing that can carry an introduction:
 
@@ -102,8 +115,9 @@ The assertion is deliberately the narrowest thing that can carry an introduction
 
 Signing this is not the OIDC provider that `AUTODEC-0010` refused to hand-write. That refusal was
 about ~1.5k lines of discovery, authorisation endpoint, consent, refresh and token introspection.
-This is one audience, one algorithm, one minute, no refresh and no consent, produced and verified by
-a library nobody here wrote. The line is worth naming precisely because it is a line that moves.
+This is one audience, one algorithm, one minute, no refresh and no consent — under a hundred lines
+on each side, and the half that matters is the JDK's. The line is worth naming precisely because it
+is a line that moves.
 
 ### 3. Sessions stay separate, and so do cookies and origins
 
@@ -144,6 +158,44 @@ decision 7 already names where it goes.
 The menu item is still a **link**, to this module on its own origin. It now carries a handoff in its
 query string. A link that signs you in is still a link, and nothing about the browser boundary
 changed.
+
+### 8. The door on Clara Care's side is not under `/api/v1`
+
+It is `GET /sso/plantoes`: a browser navigation with no request body, no response body and nothing
+of the domain in it, which answers `302` with the assertion in the `Location`. Putting it in the
+versioned contract would add an operation to the catalogue, to the generated TypeScript client, to
+the endpoint coverage files and to the contract tests, for something no API client will ever call.
+`AUTODEC-0009` decision 3 set that precedent from the other direction and gave the reason: a second
+entrance onto the same product is not new product surface. `openapi/openapi.yaml` is untouched, and
+its operation count does not move.
+
+Clara Care's security chain ends in `anyRequest().denyAll()`, so the path is unreachable until it is
+named — it is named with `ROLE_STAFF_IDENTITY` **and** `MFA_VERIFIED`. A session that has not
+finished proving who it is must not be able to extend itself into a second product.
+
+## Configuring it
+
+The two halves share one Ed25519 key pair. It is generated once, by hand, and never by this
+codebase:
+
+```bash
+openssl genpkey -algorithm ed25519 -out plantoes-handoff.pem
+openssl pkey -in plantoes-handoff.pem -outform DER | base64 -w0
+openssl pkey -in plantoes-handoff.pem -pubout -outform DER | base64 -w0
+```
+
+The second line is the **private** key, PKCS#8, and it belongs in Clara Care's environment as
+`CLARACARE_HANDOFF_PLANTOES_PRIVATEKEY`. The third is the **public** key, X.509, and it belongs in
+this product's as `SHIFT_CATCHER_HANDOFF_PUBLICKEY`. The `.pem` itself belongs nowhere afterwards.
+
+Clara Care also needs `CLARACARE_HANDOFF_PLANTOES_ENTRYURL` pointing at
+`https://pego.claracare.com.br/console/entrada`, and the frontend's `plantoesUrl` becomes the
+relative `/sso/plantoes` rather than the other product's origin — the menu item now goes through
+this product's own door, which is what mints the introduction.
+
+Both sides default to blank and both refuse everything while blank. An installation that has not
+been given a key has not been told who is allowed to vouch for anybody, which is the right thing for
+a deployment to believe until somebody tells it otherwise.
 
 ## What this costs
 
