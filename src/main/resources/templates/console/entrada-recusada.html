@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!--
+  Where a Clara Care link lands when it does not open the door.
+
+  Three sentences for nine reasons, and the collapsing is deliberate: the two a person can do
+  something about are named, and everything else says the same thing. Telling somebody who is
+  probing this endpoint which of their guesses was closest is exactly what they came for.
+-->
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{console/fragments :: head('Entrada recusada')}"></head>
+<body>
+<main>
+  <h1>Shift Catcher</h1>
+  <div class="card">
+    <p class="flash no" th:if="${reason == 'expirado'}">
+      Este link de entrada expirou. Ele vale por menos de um minuto, de propósito.
+    </p>
+    <p class="flash no" th:if="${reason == 'usado'}">
+      Este link de entrada já foi usado. Cada um vale uma vez só.
+    </p>
+    <p class="flash no" th:if="${reason == 'invalido'}">
+      Não deu para entrar com este link.
+    </p>
+
+    <p class="muted">
+      Volte ao Clara Care e clique em Plantões de novo — o link é gerado na hora em que você clica.
+    </p>
+  </div>
+</main>
+</body>
+</html>

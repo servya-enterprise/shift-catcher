@@ -65,6 +65,13 @@ class ConsoleSessionFilter(
             filterChain.doFilter(request, response)
             return
         }
+        // The Clara Care door and the page that explains why it did not open. Both arrive without a
+        // session by definition — the first one is what creates it — and both are navigations, so
+        // neither can be answered with the JSON refusal below. AUTODEC-0012 decision 2.
+        if (path == HANDOFF_PATH || path == HANDOFF_REFUSED_PATH) {
+            filterChain.doFilter(request, response)
+            return
+        }
         // Sign-in is the one call that arrives without a session and is expected to. The exemption
         // is an exact URI-and-method match rather than a prefix, so nothing else inherits it: GET
         // and DELETE on the same path still require a session.
@@ -171,6 +178,8 @@ class ConsoleSessionFilter(
         const val API_PREFIX = "/console/api/"
         const val SESSION_PATH = "/console/api/session"
         const val LOGIN_PATH = "/console/login"
+        const val HANDOFF_PATH = "/console/entrada"
+        const val HANDOFF_REFUSED_PATH = "/console/entrada-recusada"
         const val AUTHENTICATED = "shiftCatcherConsoleAuthenticated"
         const val CSRF_TOKEN = "shiftCatcherConsoleCsrfToken"
         const val CSRF_FIELD = "csrfToken"

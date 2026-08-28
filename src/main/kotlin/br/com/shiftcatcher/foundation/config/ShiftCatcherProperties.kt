@@ -5,6 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties("shift-catcher")
 data class ShiftCatcherProperties(
     val security: Security = Security(),
+    val handoff: Handoff = Handoff(),
     val poc: Poc = Poc(),
     val greenApi: GreenApi = GreenApi(),
     val detection: Detection = Detection(),
@@ -57,6 +58,24 @@ data class ShiftCatcherProperties(
 
     data class Security(
         val adminApiToken: String = "",
+    )
+
+    /**
+     * How Clara Care introduces a person to this product. AUTODEC-0012.
+     *
+     * [publicKey] is the X.509 encoding of an Ed25519 public key, base64. Blank means this
+     * deployment accepts no introduction at all — which is the right default, because a deployment
+     * that has not been given a key has not been told who is allowed to vouch for anybody.
+     *
+     * [clockSkew] is small on purpose. The assertion lives sixty seconds; a generous skew here
+     * would quietly extend a window whose shortness is the whole protection.
+     */
+    data class Handoff(
+        val publicKey: String = "",
+        val issuer: String = "https://claracare.com.br",
+        val audience: String = "plantoes",
+        val clockSkew: java.time.Duration = java.time.Duration.ofSeconds(15),
+        val landingPath: String = "/console",
     )
 
     data class Poc(
